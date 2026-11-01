@@ -286,6 +286,63 @@ $("print").onclick=async()=>{
   }catch(e){btChar=null;say(e&&e.name==="NotFoundError"?"Printer chuna nahi gaya":"Print nahi hua: "+(e.message||e))}
 };
 
-show();
+/* ---------- v2 awaaz theek karne wala hissa ---------- */
+const SYS2='You help a motorcycle mechanic in Pakistan who speaks Urdu, Hindi or English mixed. Extract from the transcript: (1) the bike plate. Pakistani plates are 2 to 4 capital letters then 2 to 4 digits, for example RNE 8485, LEB 1234, ABC 123. Digits are often said in pairs, so "84 85" or "eighty four eighty five" means 8485. Join all digits and never drop any. (2) labour jobs, meaning a charge for work like chain kasna, tuning, service, or just mazdoori. If the job is only a labour or mazdoori charge, name it exactly "Labour". (3) spare parts or oil bought. Give each job and part its price in rupees (integer, 0 if not said). Never mix plate digits with prices. Write names in short English or Roman Urdu using Latin letters. Return JSON only: {"bike":"","work":[{"name":"","price":0}],"parts":[{"name":"","price":0}]}';
+const BIKESYS='The text is a spoken Pakistani motorcycle number plate: 2 to 4 capital letters then 2 to 4 digits, for example RNE 8485 or LEB 1234. Digits may be said in pairs, so "84 85" means 8485. Join all digits and never drop any. Return JSON only: {"bike":"RNE8485"}';
+const BIKEHINT="Pakistani motorcycle number plate, letters then digits. Examples: RNE 8485, LEB 1234, LEA 5678, ABC 1234, RIV 9021.";
+const lab=n=>/^\s*(labou?rers?|mazdoori|mazduri)\s*$/i.test(n)?"Labour":String(n||"-").replace(/\blabou?rers?\b/ig,"Labour");
+const it2=i=>({n:lab(i.name),p:Math.round(+i.price)||0});
+const cleanBike=s=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+async function tr(blob,prompt,lang){
+  const ext=/mp4|m4a|aac/.test(blob.type)?"m4a":/ogg/.test(blob.type)?"ogg":"webm";
+  const fd=new FormData();fd.append("file",blob,"a."+ext);fd.append("model",M_TR);fd.append("prompt",prompt);if(lang)fd.append("language",lang);
+  return (await oai("audio/transcriptions",{method:"POST",body:fd})).text||"";
+}
+async function ask(sys,text){
+  let last;
+  for(const m of ["gpt-4o",M_CH]){
+    try{
+      const j=await oai("chat/completions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:m,temperature:0,response_format:{type:"json_object"},messages:[{role:"system",content:sys},{role:"user",content:text}]})});
+      return JSON.parse(j.choices[0].message.content);
+    }catch(e){last=e;if(/ghalat|credit/.test(e.message))break}
+  }
+  throw last;
+}
+async function voice(blob){
+  try{
+    say("Samajh raha hoon...");
+    const t=await tr(blob,HINT);
+    if(!t.trim()){say("Kuch suna nahi, dobara bolain");return}
+    const o=await ask(SYS2,t);
+    const bk=cleanBike(o.bike);if(bk){bike=bk;$("bike").value=bike}
+    (o.work||[]).forEach(i=>work.push(it2(i)));(o.parts||[]).forEach(i=>parts.push(it2(i)));
+    keep();render();say("Suna: "+t);
+  }catch(e){say("AI masla: "+e.message)}
+}
+(function(){
+  const bi=$("bike"),b=document.createElement("button");
+  b.className="add";b.id="bikeMic";b.textContent="🎤";b.style.background="#c2410c";
+  const row=document.createElement("div");row.className="row";bi.parentNode.insertBefore(row,bi);row.append(bi,b);
+  let r=null,tm;
+  b.onclick=async()=>{
+    if(r){r.stop();return}
+    if(!OAI){say("Pehle Setting mein OpenAI key daalein");return}
+    let st;try{st=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){say("Mic ki ijazat dein");return}
+    const ch=[],mr=new MediaRecorder(st);r=mr;
+    mr.ondataavailable=e=>ch.push(e.data);
+    mr.onstop=async()=>{
+      clearTimeout(tm);st.getTracks().forEach(t=>t.stop());r=null;b.textContent="🎤";
+      try{
+        say("Samajh raha hoon...");
+        const t=await tr(new Blob(ch,{type:mr.mimeType||"audio/webm"}),BIKEHINT,"en");
+        const o=await ask(BIKESYS,t),bk=cleanBike(o.bike);
+        if(bk){bike=bk;bi.value=bike;keep();render()}
+        say("Bike: "+(bk||"samajh nahi aaya")+"  (suna: "+t+")");
+      }catch(e){say("AI masla: "+e.message)}
+    };
+    tm=setTimeout(()=>{if(r===mr)mr.stop()},12000);
+    mr.start();b.textContent="⏹";say("Bike number bolain, phir dobara dabayein");
+  };
+})();show();
 </script>
 </body></html>
