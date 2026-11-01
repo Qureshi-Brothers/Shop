@@ -88,7 +88,6 @@ details{margin-top:8px}summary{font-size:19px}
 </div>
 
 <div class="bar" id="bar">Tayyar</div>
-
 <script>
 "use strict";
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
@@ -141,4 +140,152 @@ $("logout").onclick=logout;
 async function start(){
   if(started)return;started=true;
   const d=ls.get("draft",{});bike=d.bike||"";work=d.work||[];parts=d.parts||[];$("bike").value=bike;render();
-  try{await loadBil
+  try{await loadBills()}catch(e){say("History nahi aayi: "+e.message)}
+  try{const k=await db("settings?id=eq.1&select=openai_key");OAI=(k&&k[0]&&k[0].openai_key)||""}catch(e){}
+  $("keyState").textContent=OAI?"OpenAI key lagi hui hai ✔":"OpenAI key abhi nahi lagi";
+}
+$("saveKey").onclick=async()=>{
+  const k=$("apiKey").value.trim();if(k.length<10){say("Key poori paste karein");return}
+  try{await db("settings",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:1,openai_key:k})});
+    OAI=k;$("apiKey").value="";$("keyState").textContent="OpenAI key lagi hui hai ✔";say("Key save ho gayi ✔")}
+  catch(e){say("Key save nahi hui: "+e.message)}
+};
+  /* ---------- data ---------- */
+const keep=()=>{saved=false;ls.set("draft",{bike,work,parts})};
+const total=()=>[...work,...parts].reduce((a,x)=>a+(+x.p||0),0);
+const item=i=>({n:String(i.name||"-"),p:Math.round(+i.price)||0});
+function parseItem(t){const k=fix(t).trim().split(/\s+/).filter(Boolean);let p=0;if(k.length>1&&/^\d+$/.test(k[k.length-1]))p=+k.pop();return{n:k.join(" ")||"-",p}}
+async function loadBills(){bills=await db("bills?select=*&order=created_at.desc&limit=300")||[];render()}
+function list(el,arr){
+  el.innerHTML="";
+  arr.forEach((it,i)=>{
+    const d=document.createElement("div");d.className="item";
+    const n=document.createElement("div");n.className="n";n.textContent=it.n;
+    const p=document.createElement("input");p.type="number";p.inputMode="numeric";p.value=it.p;
+    p.oninput=()=>{it.p=+p.value||0;keep();$("total").textContent="Total: "+total()};
+    const x=document.createElement("button");x.className="x";x.textContent="✕";
+    x.onclick=()=>{arr.splice(i,1);keep();render()};
+    d.append(n,p,x);el.append(d);
+  });
+}
+function render(){
+  list($("work"),work);list($("parts"),parts);$("total").textContent="Total: "+total();
+  const day=new Date().toDateString(),t=bills.filter(x=>new Date(x.created_at).toDateString()===day);
+  $("today").textContent=t.length+" bike · Rs "+t.reduce((a,x)=>a+x.total,0);
+  const k=norm(bike);let b=bills;
+  if(k){b=bills.filter(x=>norm(x.bike)===k);$("allHint").textContent="Sirf is bike ki bills ("+b.length+")"}
+  else $("allHint").textContent=b.length?"Aakhri bills (bike number likhein to sirf us ki dikhengi)":"Abhi koi bill save nahi hui";
+  const el=$("all");el.innerHTML="";
+  b.slice(0,40).forEach(x=>{
+    const d=document.createElement("details"),s=document.createElement("summary");
+    s.textContent=(x.bike||"-")+" · "+new Date(x.created_at).toLocaleDateString()+" · Rs "+x.total;d.append(s);
+    [...x.work.map(i=>["🔧",i]),...x.parts.map(i=>["⚙️",i])].forEach(([ic,i])=>{
+      const p=document.createElement("div");p.style.cssText="font-size:18px;padding:4px 0 4px 12px";p.textContent=ic+" "+i.n+" — "+i.p;d.append(p)});
+    el.append(d);
+  });
+  $("hist").innerHTML="";
+  if(k){const h=bills.filter(x=>norm(x.bike)===k);if(h.length){const l=h[0],d=document.createElement("div");d.className="hist";
+    d.textContent="Pehle "+h.length+" bar aayi. Akhri: "+new Date(l.created_at).toLocaleDateString()+" · Rs "+l.total+" · "+[...l.work,...l.parts].map(x=>x.n).join(", ");$("hist").append(d)}}
+}
+$("bike").oninput=e=>{bike=e.target.value.toUpperCase();keep();render()};
+function addFrom(inp,arr){const v=inp.value.trim();if(!v){inp.focus();return}arr.push(parseItem(v));inp.value="";keep();render()}
+$("addWork").onclick=()=>addFrom($("workIn"),work);
+$("addPart").onclick=()=>addFrom($("partIn"),parts);
+$("workIn").onkeydown=e=>{if(e.key==="Enter")addFrom($("workIn"),work)};
+$("partIn").onkeydown=e=>{if(e.key==="Enter")addFrom($("partIn"),parts)};
+$("clear").onclick=()=>{bike="";work=[];parts=[];$("bike").value="";ls.del("draft");saved=false;render();say("Nayi bike")};
+
+async function saveBill(){
+  if(!work.length&&!parts.length){say("Pehle kaam ya parts daalein");return false}
+  if(saved)return true;
+  await db("bills",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify({bike:bike.trim(),work:work.map(x=>({n:x.n,p:x.p})),parts:parts.map(x=>({n:x.n,p:x.p})),total:total()})});
+  saved=true;await loadBills();return true;
+}
+$("save").onclick=async()=>{try{if(await saveBill())say("Bill save ho gaya ✔")}catch(e){say("Save nahi hua: "+e.message)}};
+
+/* ---------- voice (OpenAI) ---------- */
+async function oai(path,opts){
+  const r=await fetch("https://api.openai.com/v1/"+path,{...opts,headers:{...(opts.headers||{}),Authorization:"Bearer "+OAI}});
+  if(!r.ok){let m="";try{m=(await r.json()).error.message}catch(e){}
+    throw new Error(r.status===401?"OpenAI key ghalat hai":r.status===429?"OpenAI credit khatam ya bohat tez":("Error "+r.status+" "+m))}
+  return r.json();
+}
+async function voice(blob){
+  try{
+    say("Samajh raha hoon...");
+    const ext=/mp4|m4a|aac/.test(blob.type)?"m4a":/ogg/.test(blob.type)?"ogg":"webm";
+    const fd=new FormData();fd.append("file",blob,"a."+ext);fd.append("model",M_TR);fd.append("prompt",HINT);
+    const t=(await oai("audio/transcriptions",{method:"POST",body:fd})).text||"";
+    if(!t.trim()){say("Kuch suna nahi, dobara bolain");return}
+    const j=await oai("chat/completions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:M_CH,temperature:0,response_format:{type:"json_object"},messages:[{role:"system",content:SYS},{role:"user",content:t}]})});
+    const o=JSON.parse(j.choices[0].message.content);
+    if(o.bike){bike=String(o.bike).toUpperCase();$("bike").value=bike}
+    (o.work||[]).forEach(i=>work.push(item(i)));(o.parts||[]).forEach(i=>parts.push(item(i)));
+    keep();render();say("Ho gaya ✔ Suna: "+t);
+  }catch(e){say("AI masla: "+e.message)}
+}
+let rec=null;
+$("mic").onclick=async()=>{
+  const b=$("mic");
+  if(rec){rec.stop();return}
+  if(!OAI){say("Pehle neeche Setting mein OpenAI key daalein");return}
+  let st;try{st=await navigator.mediaDevices.getUserMedia({audio:true})}
+  catch(e){say("Mic ki ijazat dein: address bar ke paas nishan > Permissions > Microphone > Allow");return}
+  const ch=[],mr=new MediaRecorder(st);let tm;rec=mr;
+  mr.ondataavailable=e=>ch.push(e.data);
+  mr.onstop=()=>{clearTimeout(tm);st.getTracks().forEach(t=>t.stop());rec=null;b.classList.remove("on");b.textContent="🎤";voice(new Blob(ch,{type:mr.mimeType||"audio/webm"}))};
+  tm=setTimeout(()=>{if(rec===mr)mr.stop()},30000);
+  mr.start();b.classList.add("on");b.textContent="⏹";say("Bol rahe hain... khatam hone par dobara dabayein");
+};
+  /* ---------- printing (58mm thermal, Bluetooth) ---------- */
+function drawBill(){
+  const W=384,pad=8,lh=34,L=[],dt=new Date();
+  L.push({t:SHOP,c:1,b:1,big:1});
+  L.push({t:dt.toLocaleDateString()+" "+dt.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),c:1});
+  L.push({t:"Bike: "+(bike||"-"),b:1,big:1});
+  L.push({t:"--------------------------------",c:1});
+  if(work.length){L.push({t:"KAAM",b:1});work.forEach(x=>L.push({t:x.n,r:String(x.p)}))}
+  if(parts.length){L.push({t:"PARTS",b:1});parts.forEach(x=>L.push({t:x.n,r:String(x.p)}))}
+  L.push({t:"--------------------------------",c:1});
+  L.push({t:"TOTAL",r:"Rs "+total(),b:1,big:1});
+  L.push({t:"Shukriya!",c:1});
+  const H=L.length*lh+pad*2+20,cv=document.createElement("canvas");cv.width=W;cv.height=H;
+  const g=cv.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,W,H);g.fillStyle="#000";g.textBaseline="middle";
+  L.forEach((l,i)=>{const y=pad+i*lh+lh/2;g.font=(l.b?"bold ":"")+(l.big?26:22)+"px sans-serif";
+    if(l.c){g.textAlign="center";g.fillText(l.t,W/2,y,W-pad*2)}
+    else{g.textAlign="left";g.fillText(l.t,pad,y,l.r?W-140:W-pad*2);if(l.r){g.textAlign="right";g.fillText(l.r,W-pad,y)}}});
+  return cv;
+}
+function toRaster(cv){
+  const W=cv.width,H=cv.height,bpr=W/8,px=cv.getContext("2d").getImageData(0,0,W,H).data,out=[];
+  for(let y0=0;y0<H;y0+=100){
+    const h=Math.min(100,H-y0),buf=new Uint8Array(8+bpr*h);buf.set([0x1d,0x76,0x30,0,bpr&255,bpr>>8,h&255,h>>8]);
+    for(let y=0;y<h;y++)for(let x=0;x<W;x++){const i=((y0+y)*W+x)*4;if(px[i]*0.3+px[i+1]*0.59+px[i+2]*0.11<140)buf[8+y*bpr+(x>>3)]|=0x80>>(x&7)}
+    out.push(buf);
+  }
+  return out;
+}
+const SVC=["000018f0-0000-1000-8000-00805f9b34fb","0000ff00-0000-1000-8000-00805f9b34fb","e7810a71-73ae-499d-8c15-faa9aef0c3f2","49535343-fe7d-4ae5-8fa9-9fafd205e455","0000ffe0-0000-1000-8000-00805f9b34fb","0000fee7-0000-1000-8000-00805f9b34fb"];
+let btDev=null,btChar=null;
+async function connectPrinter(){
+  if(btChar&&btDev&&btDev.gatt.connected)return;
+  if(!navigator.bluetooth)throw new Error("Bluetooth is browser mein nahi");
+  if(!btDev)btDev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:SVC});
+  const s=await btDev.gatt.connect();
+  for(const svc of await s.getPrimaryServices())for(const c of await svc.getCharacteristics())if(c.properties.write||c.properties.writeWithoutResponse){btChar=c;return}
+  throw new Error("Printer ka write port nahi mila");
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function send(d){for(let i=0;i<d.length;i+=100){const c=d.slice(i,i+100);if(btChar.properties.writeWithoutResponse)await btChar.writeValueWithoutResponse(c);else await btChar.writeValue(c);await sleep(25)}}
+$("print").onclick=async()=>{
+  if(!work.length&&!parts.length){say("Pehle kaam ya parts daalein");return}
+  try{
+    say("Printer se jud raha hai...");await connectPrinter();say("Print ho raha hai...");
+    await send(new Uint8Array([0x1b,0x40]));for(const s of toRaster(drawBill()))await send(s);await send(new Uint8Array([0x1b,0x64,5]));
+    try{await saveBill();say("Bill print aur save ho gaya ✔")}catch(e){say("Print ho gaya, lekin save nahi hua: "+e.message)}
+  }catch(e){btChar=null;say(e&&e.name==="NotFoundError"?"Printer chuna nahi gaya":"Print nahi hua: "+(e.message||e))}
+};
+
+show();
+</script>
+</body></html>
