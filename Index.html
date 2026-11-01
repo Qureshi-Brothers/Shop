@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ur"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shehbaz Autos</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,sans-serif;background:#f1efe9;color:#1c1b19;padding:12px 14px 90px}
+h2{margin:6px 0;font-size:18px}
+.card{background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px #0002}
+.row{display:flex;gap:8px;align-items:center}
+input{font-size:21px;padding:10px;border:2px solid #b9b3a4;border-radius:10px;width:100%;min-width:0;margin-top:6px}
+button{font-family:inherit}
+.mic{flex:none;width:96px;height:96px;border-radius:50%;border:0;font-size:44px;background:#c2410c;color:#fff}
+.mic.on{background:#2f7d32}
+.add{flex:none;width:56px;height:56px;border-radius:50%;border:0;font-size:24px;background:#2f7d32;color:#fff;margin-top:6px}
+.big{width:100%;padding:16px;font-size:21px;border:0;border-radius:12px;color:#fff;margin-top:8px}
+.g{background:#2f7d32}.b{background:#1d5fb4}.k{background:#57534e}
+.item{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #e4e0d6}
+.item .n{flex:1;font-size:20px;min-width:0;word-break:break-word}
+.item input{width:100px;font-size:20px;padding:6px;margin:0}
+.x{border:0;background:#b42318;color:#fff;border-radius:8px;font-size:20px;width:40px;height:40px}
+.total{font-size:30px;font-weight:700;text-align:center;padding:6px}
+.hint{font-size:14px;color:#6a665d}
+.hist{font-size:16px;background:#fdf0b8;padding:8px;border-radius:8px;margin-top:8px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#1c1b19;color:#f6f4ee;font-size:17px;min-height:46px;padding:10px 14px}
+details{margin-top:8px}summary{font-size:19px}
+.err{color:#b42318;font-size:17px;min-height:22px}
+</style></head><body>
+
+<div id="login" class="card" hidden>
+  <h2>Shehbaz Autos</h2>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+  <div class="err" id="lerr"></div>
+  <button class="big g" id="go">Login</button>
+</div>
+
+<div id="app" hidden>
+  <div class="card">
+    <div class="row">
+      <button class="mic" id="mic">🎤</button>
+      <div class="hint">Dabayein, bolain: "RNE 8485, chain kasna do sau, brake shoe char sau pachas". Phir dobara dabayein.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🏍️ Bike Number</h2>
+    <input id="bike" placeholder="RNE 8485" autocapitalize="characters">
+    <div id="hist"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔧 Kaam (mazdoori)</h2>
+    <div id="work"></div>
+    <div class="row"><input id="workIn" placeholder="chain kasna 200"><button class="add" id="addWork">➕</button></div>
+  </div>
+
+  <div class="card">
+    <h2>⚙️ Parts</h2>
+    <div id="parts"></div>
+    <div class="row"><input id="partIn" placeholder="brake shoe 450"><button class="add" id="addPart">➕</button></div>
+  </div>
+
+  <div class="card">
+    <div class="total" id="total">Total: 0</div>
+    <button class="big g" id="print">🖨️ Print + Save</button>
+    <button class="big b" id="save">💾 Sirf Save</button>
+    <button class="big k" id="clear">🆕 Nayi Bike</button>
+  </div>
+
+  <div class="card">
+    <h2>📅 Aaj ka hisaab</h2>
+    <div id="today" style="font-size:22px"></div>
+  </div>
+
+  <div class="card">
+    <h2>📖 Purani Bills</h2>
+    <div class="hint" id="allHint"></div>
+    <div id="all"></div>
+  </div>
+
+  <div class="card">
+    <details><summary>⚙️ Setting</summary>
+      <div class="hint" id="keyState"></div>
+      <input id="apiKey" type="password" placeholder="OpenAI key (sk-...)" autocomplete="off">
+      <button class="big b" id="saveKey">Key save karein</button>
+      <button class="big k" id="logout">Logout</button>
+    </details>
+  </div>
+</div>
+
+<div class="bar" id="bar">Tayyar</div>
+
+<script>
+"use strict";
+const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
+const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
+const SHOP="SHEHBAZ AUTOS";
+const M_TR="gpt-4o-transcribe", M_CH="gpt-4o-mini";
+const HINT="Motorcycle workshop in Pakistan. Words: chain kasna, brake shoe, clutch plate, spark plug, tyre, tube, engine oil, oil filter, air filter, kick, self start, carburetor, piston, cylinder, bearing, cable, mirror, indicator, battery, mazdoori, mobile oil. Bike plate like RNE 8485. Numbers are prices in rupees.";
+const SYS='You help a motorcycle mechanic in Pakistan who speaks Urdu, Hindi or English mixed. From the transcript extract: the bike number plate (capital letters and digits, no spaces, empty string if not said), the labour jobs (service work like chain kasna, tuning, mazdoori) and the spare parts or oil bought (like brake shoe, tyre, spark plug, engine oil), each with its price in rupees (integer, 0 if not said). Write names in short English or Roman Urdu using Latin letters. Return JSON only: {"bike":"","work":[{"name":"","price":0}],"parts":[{"name":"","price":0}]}';
+
+const $=id=>document.getElementById(id);
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const say=t=>{$("bar").textContent=t};
+const AR="٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹";
+const fix=s=>s.replace(/[٠-٩۰-۹]/g,c=>String(AR.indexOf(c)%10));
+const norm=s=>(s||"").toUpperCase().replace(/[^\p{L}\p{N}]/gu,"");
+let S=ls.get("sess",null),OAI="",bike="",work=[],parts=[],bills=[],saved=false,started=false;
+
+/* ---------- login / session ---------- */
+async function tokenReq(body,grant){
+  const r=await fetch(SUPA+"/auth/v1/token?grant_type="+grant,{method:"POST",headers:{apikey:ANON,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error_description||j.msg||j.message||("Error "+r.status));
+  S={access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000};
+  ls.set("sess",S);
+}
+async function ensure(){
+  if(!S)throw new Error("Login karein");
+  if(S.exp-Date.now()<60000){
+    try{await tokenReq({refresh_token:S.refresh_token},"refresh_token")}
+    catch(e){if(/fetch|network/i.test(e.message))throw new Error("Internet nahi hai");logout();throw new Error("Dobara login karein")}
+  }
+}
+function logout(){S=null;started=false;ls.del("sess");show()}
+async function db(path,opts={}){
+  await ensure();
+  const r=await fetch(SUPA+"/rest/v1/"+path,{...opts,headers:{apikey:ANON,Authorization:"Bearer "+S.access_token,"Content-Type":"application/json",...(opts.headers||{})}});
+  const t=await r.text();
+  if(!r.ok){let m=t;try{m=JSON.parse(t).message||t}catch(e){}throw new Error(m)}
+  return t?JSON.parse(t):null;
+}
+function show(){$("login").hidden=!!S;$("app").hidden=!S;if(S)start()}
+$("go").onclick=async()=>{
+  $("lerr").textContent="";
+  try{await tokenReq({email:$("em").value.trim(),password:$("pw").value},"password");show()}
+  catch(e){$("lerr").textContent=/invalid/i.test(e.message)?"Email ya password ghalat hai":/fetch/i.test(e.message)?"Internet nahi hai":e.message}
+};
+$("pw").onkeydown=e=>{if(e.key==="Enter")$("go").click()};
+$("logout").onclick=logout;
+
+async function start(){
+  if(started)return;started=true;
+  const d=ls.get("draft",{});bike=d.bike||"";work=d.work||[];parts=d.parts||[];$("bike").value=bike;render();
+  try{await loadBil
