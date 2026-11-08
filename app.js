@@ -4,10 +4,13 @@ const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
 const HINT="Motorcycle workshop in Pakistan. Words: chain kasna, brake shoe, clutch plate, spark plug, tyre, tube, engine oil, oil filter, air filter, kick, self start, carburetor, piston, cylinder, bearing, cable, mirror, indicator, battery, mazdoori, mobile oil. Bike plate like RNE 8485. Numbers are prices in rupees.";
-const SYS='You help a motorcycle mechanic in Pakistan who speaks Urdu, Hindi or English mixed. Extract from the transcript: (1) the bike plate. Pakistani plates are 2 to 4 capital letters then 2 to 4 digits, for example RNE 8485, LEB 1234, ABC 123. Digits are often said in pairs, so "84 85" or "eighty four eighty five" means 8485. Join all digits and never drop any. (2) labour jobs, meaning a charge for work like chain kasna, tuning, service, or just mazdoori. If the job is only a labour or mazdoori charge, name it exactly "Labour". (3) spare parts or oil bought. Give each job and part its price in rupees (integer, 0 if not said). Never mix plate digits with prices. Write names in short English or Roman Urdu using Latin letters. For parts also give qty (pieces, default 1; price is the total for that line). If a part is bought from another shop (bahar se, mohalle se, dukaan se) set outside true and shop to that shop name. Return JSON only: {"bike":"","work":[{"name":"","price":0}],"parts":[{"name":"","price":0,"qty":1,"outside":false,"shop":""}]}';
+const SYS='You help a motorcycle mechanic in Pakistan who speaks Urdu, Hindi or English mixed. Extract from the transcript: (1) the bike plate. Pakistani plates are 2 to 4 capital letters then 2 to 4 digits, for example RNE 8485, LEB 1234, ABC 123. Digits are often said in pairs, so "84 85" or "eighty four eighty five" means 8485. Join all digits and never drop any. (2) labour jobs, meaning a charge for work like chain kasna, tuning, service, or just mazdoori. If the job is only a labour or mazdoori charge, name it exactly "Labour". (3) spare parts or oil bought. Give each job and part its price in rupees (integer, 0 if not said). Never mix plate digits with prices. Write names in short English or Roman Urdu using Latin letters. For parts also give qty (pieces, default 1). If he says a number of pieces before or after the part name (do, teen, 2, 3, "two spark plugs"), set qty to that number. The price you return is always the total for that whole line: if he says the price is per piece (har ek, ek ka, each), multiply it by qty. Example: "do spark plug 300" means qty 2, price 300. If a part is bought from another shop (bahar se, mohalle se, dukaan se) set outside true and shop to that shop name. Return JSON only: {"bike":"","work":[{"name":"","price":0}],"parts":[{"name":"","price":0,"qty":1,"outside":false,"shop":""}]}';
 const BIKESYS='The text is a spoken Pakistani motorcycle number plate: 2 to 4 capital letters then 2 to 4 digits, for example RNE 8485 or LEB 1234. Digits may be said in pairs, so "84 85" means 8485. Join all digits and never drop any. Return JSON only: {"bike":"RNE8485"}';
 const BIKEHINT="Pakistani motorcycle number plate, letters then digits. Examples: RNE 8485, LEB 1234, LEA 5678, ABC 1234, RIV 9021.";
-const STSYS='A motorcycle mechanic in Pakistan says stock items he added to his shop, each with how many pieces. Names in short English or Roman Urdu using Latin letters. Return JSON only: {"items":[{"name":"","qty":0}]}';
+const STSYS='A motorcycle mechanic in Pakistan says stock items he added to his shop, each with how many pieces, and sometimes the buying price. Names in short English or Roman Urdu using Latin letters. cost is the buying price of ONE piece in rupees (0 if not said; if he gives one price for all pieces together, divide by qty). Return JSON only: {"items":[{"name":"","qty":0,"cost":0}]}';
+const WSYS='A motorcycle mechanic in Pakistan (Urdu, Hindi, English mixed) says labour jobs with prices. If a job is only a labour or mazdoori charge, name it exactly "Labour". Names in short English or Roman Urdu using Latin letters. Price in rupees, integer, 0 if not said. Return JSON only: {"work":[{"name":"","price":0}]}';
+const PSYS='A motorcycle mechanic in Pakistan (Urdu, Hindi, English mixed) says spare parts or oil with prices. Names in short English or Roman Urdu using Latin letters. Give qty (pieces, default 1). If he says a number of pieces before or after the part name (do, teen, 2, 3), set qty to that number. The price is always the total for that whole line: if he says the price is per piece (har ek, ek ka, each), multiply by qty. Example: "do spark plug 300" means qty 2, price 300. If a part is bought from another shop (bahar se, mohalle se, dukaan se) set outside true and shop to that shop name. Return JSON only: {"parts":[{"name":"","price":0,"qty":1,"outside":false,"shop":""}]}';
+const TTSYS='You write what a text-to-speech voice reads aloud to an unlettered Pakistani motorcycle customer to confirm his bill. Use simple spoken Urdu in Urdu script. Say the bike plate letter by letter and digits one by one. Write every number in Urdu words. Say each job and part with its price (and quantity when more than 1), then the total, and the amount still owed if any. Keep it short and clear. Return JSON only: {"say":""}';
 const MERGE={Prefer:"resolution=merge-duplicates,return=minimal"},MIN={Prefer:"return=minimal"};
 
 const $=id=>document.getElementById(id);
@@ -61,14 +64,16 @@ async function start(){
   try{ME=await rpc("me")}catch(e){started=false;say("Dukaan ki maloomat nahi aayi: "+e.message);return}
   if(!ME){$("app").hidden=true;$("noshop").hidden=false;return}
   $("noshop").hidden=true;$("app").hidden=false;
-  SHOP=String(ME.name||"").toUpperCase();OAI=ME.openai_key||"";pinHash=ME.pin||"";
-  $("shopName").textContent=ME.name;$("adminCard").hidden=!ME.is_admin;
+  SHOP=String(ME.name||"").toUpperCase();OAI=ME.openai_key||"";pinHash=ME.pin||"";keyNote();
+  applyFlags();$("shopName").textContent=ME.name;$("adminCard").hidden=!ME.is_admin;
   document.title=ME.name;
   const d=ls.get("draft_"+ME.shop_id,{});bike=d.bike||"";work=d.work||[];parts=d.parts||[];$("bike").value=bike;
   render();
   try{await loadBills()}catch(e){say("History nahi aayi: "+e.message)}
   if(ME.is_admin)loadShops();
 }
+
+function applyFlags(){$("speak").hidden=!(ME&&ME.tts);render()}
 
 /* ---------- bill data ---------- */
 const keep=()=>{saved=false;if(ME)ls.set("draft_"+ME.shop_id,{bike,work,parts})};
@@ -77,7 +82,14 @@ const stockMatch=n=>{const k=sk(n);if(k.length<3)return null;return stk.find(s=>
 const strip=a=>a.map(x=>({n:x.n,p:x.p,...(x.q>1?{q:x.q}:{}),...(x.o?{o:1,s:x.s||""}:{})}));
 const addM=m=>{const d=new Date();d.setMonth(d.getMonth()+(+m));return d.toISOString().slice(0,10)};
 const qn=x=>(x.q>1?x.q+" x ":"")+x.n;
-function parseItem(t){const k=fix(t).trim().split(/\s+/).filter(Boolean);let p=0;if(k.length>1&&/^\d+$/.test(k[k.length-1]))p=+k.pop();return{n:k.join(" ")||"-",p}}
+function parseItem(t){
+  const k=fix(t).trim().split(/\s+/).filter(Boolean);let p=0,q=1;
+  const isQ=s=>/^(x\d+|\d+x|\d+)$/i.test(s),qv=s=>+s.replace(/x/ig,"");
+  if(k.length>1&&/^\d+$/.test(k[k.length-1]))p=+k.pop();
+  if(k.length>1&&isQ(k[k.length-1]))q=qv(k.pop());
+  else if(k.length>1&&isQ(k[0]))q=qv(k.shift());
+  return{n:k.join(" ")||"-",p,...(q>1?{q}:{})};
+}
 const lab=n=>/^\s*(labou?rers?|mazdoori|mazduri)\s*$/i.test(n)?"Labour":String(n||"-").replace(/\blabou?rers?\b/ig,"Labour");
 const it2=i=>({n:lab(i.name),p:Math.round(+i.price)||0});
 const it3=i=>({...it2(i),...(i.qty>1?{q:Math.round(i.qty)}:{}),...(i.outside?{o:1,s:String(i.shop||"")}:{})});
@@ -201,6 +213,7 @@ function renderAll(b){
     const r=document.createElement("div");r.className="row";
     r.append(
       btn("🖨️",async()=>{try{say("Print ho raha hai...");await printCV(drawBill(x));say("Dobara print ho gaya ✔")}catch(e){say("Print nahi hua: "+(e.message||e))}}),
+      ...(ME&&ME.tts?[btn("🔊",()=>speakBill(x))]:[]),
       btn("📲",()=>wa(x.cust_phone,billText(x))),
       btn("✏️",()=>editBill(x)),
       delBtn(x));
@@ -255,6 +268,36 @@ $("bikeMic").onclick=()=>recOnce($("bikeMic"),async blob=>{
   if(bk){bike=bk;$("bike").value=bike;keep();render()}
   say("Bike: "+(bk||"samajh nahi aaya")+"  (suna: "+t+")");
 },12000);
+
+const micAdd=(id,sys,key,arr,mk)=>$(id).onclick=()=>recOnce($(id),async blob=>{
+  const t=await tr(blob,HINT);
+  if(!t.trim()){say("Kuch suna nahi, dobara bolain");return}
+  const o=await ask(sys,t);(o[key]||[]).forEach(i=>arr().push(mk(i)));
+  keep();render();say("Suna: "+t);
+},20000);
+micAdd("workMic",WSYS,"work",()=>work,it2);
+micAdd("partMic",PSYS,"parts",()=>parts,it3);
+
+/* ---------- bill sunana (OpenAI awaaz) ---------- */
+let spk=null;
+async function speakBill(b){
+  if(spk){spk.pause();spk=null;say("Band");return}
+  if(!OAI){say("Awaaz abhi chalu nahi. Service dene wale se rabta karein.");return}
+  b=b||{bike,work,parts,total:total(),paid:$("paid").value===""?null:+$("paid").value};
+  if(!b.work.length&&!b.parts.length){say("Pehle kaam ya parts daalein");return}
+  try{
+    say("Bill taiyar ho raha hai...");
+    const data={bike:b.bike,jobs:b.work.map(x=>({name:x.n,price:x.p})),parts:b.parts.map(x=>({name:x.n,qty:x.q||1,price:x.p})),total:b.total,owed:b.paid!=null&&b.paid<b.total?b.total-b.paid:0};
+    let txt;try{txt=(await ask(TTSYS,JSON.stringify(data))).say}catch(e){txt=null}
+    if(!txt)txt="Bike "+data.bike+". Total "+data.total+" rupay.";
+    const r=await fetch("https://api.openai.com/v1/audio/speech",{method:"POST",headers:{Authorization:"Bearer "+OAI,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4o-mini-tts",voice:"alloy",input:txt,instructions:"Speak in Urdu, slowly and clearly, like a shopkeeper reading out a bill.",response_format:"mp3"})});
+    if(!r.ok)throw new Error(r.status===401?"OpenAI key ghalat hai":r.status===429?"OpenAI credit khatam":("Error "+r.status));
+    const url=URL.createObjectURL(await r.blob()),au=new Audio(url);spk=au;
+    au.onended=()=>{spk=null;say("Tayyar")};
+    await au.play();say("Sunaya ja raha hai... (dobara dabayein to band)");
+  }catch(e){spk=null;say("Awaaz nahi aayi: "+(e.message||e))}
+}
+$("speak").onclick=()=>speakBill();
 
 /* ---------- printing (58mm thermal, Bluetooth) ---------- */
 function drawBill(b){
@@ -331,20 +374,20 @@ async function refreshOuts(){try{outs=await db("outside?select=*&order=created_a
 async function openOwn(){$("ownLock").hidden=true;$("ownBody").hidden=false;$("lim").value=LIM();await refreshOuts();ownRender()}
 $("lim").onchange=e=>{ls.set("lim",+e.target.value||5);ownRender()};
 
-async function stockAdd(name,qty){
+async function stockAdd(name,qty,cost){
   const key=sk(name);if(key.length<2||!qty)return;
-  const ex=stk.find(s=>s.name===key),n=(ex?ex.qty:0)+qty;
-  await db("stock",{method:"POST",headers:MERGE,body:JSON.stringify({name:key,qty:n})});
-  if(ex)ex.qty=n;else stk.push({name:key,qty:n});
+  const ex=stk.find(s=>s.name===key),n=(ex?ex.qty:0)+qty,c=Math.round(+cost)||0;
+  await db("stock",{method:"POST",headers:MERGE,body:JSON.stringify({name:key,qty:n,...(c>0?{cost:c}:{})})});
+  if(ex){ex.qty=n;if(c>0)ex.cost=c}else stk.push({name:key,qty:n,...(c>0?{cost:c}:{})});
   stk.sort((a,b)=>a.name<b.name?-1:1);
 }
 $("stAdd").onclick=async()=>{
   const v=$("stIn").value.trim();if(!v)return;const it=parseItem(v);
-  try{await stockAdd(it.n,it.p||1);$("stIn").value="";ownRender();say("Stock jama ✔")}catch(e){say("Stock nahi bana: "+e.message)}
+  try{await stockAdd(it.n,it.p||1,$("stCost").value);$("stIn").value="";$("stCost").value="";ownRender();say("Stock jama ✔")}catch(e){say("Stock nahi bana: "+e.message)}
 };
 $("stMic").onclick=()=>recOnce($("stMic"),async blob=>{
   const t=await tr(blob,HINT),o=await ask(STSYS,t);
-  for(const i of o.items||[])await stockAdd(i.name,Math.round(+i.qty)||0);
+  for(const i of o.items||[])await stockAdd(i.name,Math.round(+i.qty)||0,i.cost);
   ownRender();say("Stock jama: "+t);
 },20000);
 
@@ -356,14 +399,18 @@ function ownRender(){
   low.forEach(s=>{const d=row2(s.name+" — "+s.qty+" bacha");d.style.background="#fde2e0";ll.append(d)});
   $("lowWa").hidden=!low.length;
   $("lowWa").onclick=()=>wa("","Khareedna hai ("+SHOP+"):\n"+low.map(s=>"- "+s.name+" ("+s.qty+" bacha)").join("\n"));
+  const sv0=stk.reduce((t,s)=>t+s.qty*(s.cost||0),0);
+  $("stVal").textContent="Maal ki kul qeemat (kharid ke hisaab se): Rs "+sv0+"   |   har row: bacha hua · kharid qeemat (ek ki)";
   const sl=$("stList");sl.innerHTML="";
   stk.forEach(s=>{
-    const q=document.createElement("input");q.type="number";q.inputMode="numeric";q.value=s.qty;
+    const q=document.createElement("input");q.type="number";q.inputMode="numeric";q.value=s.qty;q.style.width="70px";
+    const c=document.createElement("input");c.type="number";c.inputMode="numeric";c.value=s.cost||"";c.placeholder="Rs";c.style.width="78px";c.title="kharid qeemat (ek ki)";
+    c.onchange=async()=>{s.cost=Math.max(0,Math.round(+c.value)||0);try{await db("stock?name=eq."+encodeURIComponent(s.name),{method:"PATCH",headers:MIN,body:JSON.stringify({cost:s.cost||null})});ownRender()}catch(e){say("Qeemat nahi badli: "+e.message)}};
     q.onchange=async()=>{s.qty=Math.max(0,+q.value||0);try{await db("stock?name=eq."+encodeURIComponent(s.name),{method:"PATCH",headers:MIN,body:JSON.stringify({qty:s.qty})});ownRender()}catch(e){say("Nahi badla: "+e.message)}};
     const x=document.createElement("button");x.className="x";x.textContent="✕";
     x.onclick=async()=>{if(!x.dataset.s){x.dataset.s=1;x.textContent="?";setTimeout(()=>{x.dataset.s="";x.textContent="✕"},3000);return}
       try{await db("stock?name=eq."+encodeURIComponent(s.name),{method:"DELETE"});stk=stk.filter(z=>z!==s);ownRender()}catch(e){say("Nahi mita: "+e.message)}};
-    const d=row2(s.name,[q,x]);if(s.qty<=lim)d.style.background="#fde2e0";sl.append(d);
+    const d=row2(s.name,[q,c,x]);if(s.qty<=lim)d.style.background="#fde2e0";sl.append(d);
   });
   /* udhaar */
   const g={};bills.filter(b=>b.paid!=null&&b.paid<b.total).forEach(b=>{const k=b.cust_phone||b.cust_name||"Naam nahi";(g[k]=g[k]||{k,name:b.cust_name,phone:b.cust_phone,list:[],due:0});g[k].list.push(b);g[k].due+=b.total-b.paid});
@@ -406,7 +453,11 @@ async function loadShops(){
         if(own){say("Apni dukaan band nahi kar sakte");return}
         try{await db("shops?id=eq."+s.id,{method:"PATCH",headers:MIN,body:JSON.stringify({active:!s.active})});say(s.active?"Band kar di":"Chalu kar di");loadShops()}catch(e){say(e.message)}
       });
-      el.append(row2(s.name+(s.active?"":" (band)")+(own?" (aap ki)":""),[b]));
+      const t=sm("🔊",async()=>{
+        try{await db("shops?id=eq."+s.id,{method:"PATCH",headers:MIN,body:JSON.stringify({tts:!s.tts})});
+          if(own){ME.tts=!s.tts;applyFlags()}say(s.tts?"Sunayen band kar diya":"Sunayen chalu kar diya");loadShops()}catch(e){say(e.message)}
+      });t.style.background=s.tts?"#2f7d32":"#a8a396";
+      el.append(row2(s.name+(s.active?"":" (band)")+(own?" (aap ki)":""),[t,b]));
     });
   }catch(e){say("Clients nahi aaye: "+e.message)}
 }
@@ -418,8 +469,16 @@ $("newShop").onclick=async()=>{
 };
 $("setKey").onclick=async()=>{
   const k=$("keyAll").value.trim();if(k.length<10){say("Key poori paste karein");return}
-  try{await rpc("admin_set_key",{p_key:k});OAI=k;$("keyAll").value="";say("Key sab dukaanon mein lag gayi ✔")}
-  catch(e){say("Key nahi lagi: "+e.message)}
+  try{
+    await rpc("admin_set_key",{p_key:k});
+    ME=await rpc("me");OAI=(ME&&ME.openai_key)||"";keyNote();
+    if(OAI===k){$("keyAll").value="";say("Key sab dukaanon mein lag gayi ✔")}
+    else say("Key database mein nahi lagi, dobara try karein");
+  }catch(e){say("Key nahi lagi: "+e.message);keyNote()}
 };
+function keyNote(){
+  const t=OAI?"Awaaz chalu ✔ (key ke aakhri 4 huroof: "+OAI.slice(-4)+")":"Awaaz abhi band hai: key nahi lagi";
+  $("voiceState").textContent=t;$("keyState").textContent=t;
+}
 
 show();

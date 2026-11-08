@@ -56,13 +56,13 @@ details{margin-top:8px}summary{font-size:19px}
   <div class="card">
     <h2>🔧 Kaam (mazdoori)</h2>
     <div id="work"></div>
-    <div class="row"><input id="workIn" placeholder="chain kasna 200"><button class="add" id="addWork">➕</button></div>
+    <div class="row"><button class="add" id="workMic" style="background:#c2410c">🎤</button><input id="workIn" placeholder="chain kasna 200"><button class="add" id="addWork">➕</button></div>
   </div>
 
   <div class="card">
     <h2>⚙️ Parts</h2>
     <div id="parts"></div>
-    <div class="row"><input id="partIn" placeholder="brake shoe 450"><button class="add" id="addPart">➕</button></div>
+    <div class="row"><button class="add" id="partMic" style="background:#c2410c">🎤</button><input id="partIn" placeholder="brake shoe 450 / 2 spark plug 300"><button class="add" id="addPart">➕</button></div>
   </div>
 
   <div class="card">
@@ -74,6 +74,7 @@ details{margin-top:8px}summary{font-size:19px}
     <div class="hint">Kitne paise mile? (khali = poore mile)</div>
     <input id="paid" type="number" inputmode="numeric" placeholder="Poore mile">
     <div class="total" id="total">Total: 0</div>
+    <button class="big b" id="speak" hidden>🔊 Bill sunayen</button>
     <button class="big g" id="print">🖨️ Print + Save</button>
     <button class="big b" id="save">💾 Sirf Save</button>
     <button class="big k" id="clear">🆕 Nayi Bike</button>
@@ -103,6 +104,8 @@ details{margin-top:8px}summary{font-size:19px}
       <div class="hint" id="lowHint"></div><div id="lowList"></div>
       <button class="big g" id="lowWa" hidden>📲 Khareedna hai list WhatsApp par</button>
       <div class="row"><button class="mic small" id="stMic">🎤</button><input id="stIn" placeholder="chain cover 10"><button class="add" id="stAdd">➕</button></div>
+      <input id="stCost" type="number" inputmode="numeric" placeholder="Kharid qeemat (ek ki), zaroori nahi">
+      <div class="hint" id="stVal"></div>
       <div id="stList"></div>
       <div class="hint">Kam stock ki hadd (itne ya kam par laal)</div>
       <input id="lim" type="number" inputmode="numeric">
@@ -115,6 +118,7 @@ details{margin-top:8px}summary{font-size:19px}
 
   <div class="card" id="adminCard" hidden>
     <h2>🛠️ Admin: Clients</h2>
+    <div class="hint">✔ = dukaan chalu/band. 🔊 = "Bill sunayen" (hara = on, bhura = off)</div>
     <div id="shopList"></div>
     <h2>➕ Naya client</h2>
     <div class="hint">Pehle Supabase mein client ka login banayein (Auto Confirm), phir yahan us ka email aur dukaan ka naam likhein.</div>
