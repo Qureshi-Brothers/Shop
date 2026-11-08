@@ -481,4 +481,7 @@ function keyNote(){
   $("voiceState").textContent=t;$("keyState").textContent=t;
 }
 
+/* ?login wala link: purana login hata kar login screen dikhaye */
+if(/[?&]login(&|=|$)/.test(location.search)){S=null;ls.del("sess");try{history.replaceState(null,"",location.pathname)}catch(e){}}
 show();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
