@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ur"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workshop Bill</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#c2410c"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,sans-serif;background:#f1efe9;color:#1c1b19;padding:12px 14px 90px}
+h2{margin:10px 0 6px;font-size:18px}
+.card{background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px #0002}
+.row{display:flex;gap:8px;align-items:center}
+input,select{font-size:21px;padding:10px;border:2px solid #b9b3a4;border-radius:10px;width:100%;min-width:0;margin-top:6px;background:#fff;color:#1c1b19}
+input[type=checkbox]{width:30px;height:30px;margin:0 10px 0 0;flex:none}
+button{font-family:inherit}
+.mic{flex:none;width:96px;height:96px;border-radius:50%;border:0;font-size:44px;background:#c2410c;color:#fff}
+.mic.small{width:72px;height:72px;font-size:32px}
+.add{flex:none;width:56px;height:56px;border-radius:50%;border:0;font-size:24px;background:#c2410c;color:#fff;margin-top:6px}
+.add.pl{background:#5aa9e6;color:#fff;font-size:34px;font-weight:700;line-height:1;padding:0}
+.big{width:100%;padding:16px;font-size:21px;border:0;border-radius:12px;color:#fff;margin-top:8px}
+.g{background:#2f7d32}.b{background:#1d5fb4}.k{background:#57534e}
+.item{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #e4e0d6}
+.item .n{flex:1;font-size:20px;min-width:0;word-break:break-word}
+.item input{width:100px;font-size:20px;padding:6px;margin:0}
+.x{border:0;background:#b42318;color:#fff;border-radius:8px;font-size:20px;width:40px;height:40px;flex:none}
+.total{font-size:30px;font-weight:700;text-align:center;padding:6px}
+.hint{font-size:14px;color:#6a665d}
+.hist{font-size:16px;background:#fdf0b8;padding:8px;border-radius:8px;margin-top:8px}
+.hist .hl{font-size:15px;padding:4px 0;border-top:1px solid #e8d98a}
+.warn{background:#fde2e0;border-radius:8px;padding:8px;margin-top:8px;font-size:18px}
+.warn label{display:flex;align-items:center}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#1c1b19;color:#f6f4ee;font-size:17px;min-height:46px;padding:10px 14px;z-index:20}
+details{margin-top:8px}summary{font-size:19px}
+.err{color:#b42318;font-size:17px;min-height:22px}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.tab{flex:none;border:2px solid #b9b3a4;background:#fff;border-radius:20px;padding:8px 14px;font-size:18px;color:#1c1b19;display:flex;gap:8px;align-items:center}
+.tab.on{background:#c2410c;border-color:#c2410c;color:#fff;font-weight:700}
+.tab.new{border-style:dashed;color:#1d5fb4;border-color:#1d5fb4}
+.tab .cl{font-size:16px;padding:0 4px}
+.cal{display:inline-flex;flex-direction:column;width:34px;height:38px;border:2px solid #57534e;border-radius:6px;overflow:hidden;vertical-align:middle;margin-right:6px;text-align:center;background:#fff}
+.cal b{background:#b42318;color:#fff;font-size:10px;line-height:13px;display:block}
+.cal i{font-style:normal;font-size:18px;font-weight:700;line-height:22px;color:#1c1b19}
+.upd{background:#1d5fb4;color:#fff;border-radius:12px;padding:10px;margin-bottom:12px;font-size:18px}
+.upd button{margin-left:8px;font-size:18px;padding:6px 12px;border:0;border-radius:8px}
+.pend{background:#fdf0b8;border-radius:12px;padding:10px;margin-bottom:12px;font-size:17px}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -2px 12px #0006;padding:12px 14px 20px;z-index:40;max-height:80vh;overflow:auto;border-radius:16px 16px 0 0}
+.sht{font-size:20px;font-weight:700}
+.stk{border-bottom:1px solid #e4e0d6;padding:8px 0}
+.stk.low{background:#fde2e0}
+.stk .t{display:flex;gap:8px;align-items:center;font-size:19px}
+.stk .t span{flex:1;min-width:0;word-break:break-word}
+.stk .f{display:flex;gap:6px;align-items:flex-end;margin-top:4px}
+.stk .f div{flex:1;font-size:12px;color:#6a665d}
+.stk .f input{font-size:18px;padding:6px;margin:2px 0 0}
+.kv{display:flex;justify-content:space-between;font-size:19px;padding:3px 0;border-bottom:1px dotted #d8d3c6}
+.fold{font-size:16px;color:#57534e}
+.sm{font-size:15px;color:#57534e}
+</style></head><body>
+
+<div id="upd" class="upd" hidden>🔄 Naya version aa gaya. <button id="updGo">Abhi lagayein</button></div>
+
+<div id="login" class="card" hidden>
+  <h2>Login</h2>
+  <input id="em" type="email" placeholder="Email" autocomplete="username">
+  <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+  <div class="err" id="lerr"></div>
+  <button class="big g" id="go">Login</button>
+</div>
+
+<div id="noshop" class="card" hidden>
+  <h2>Account chalu nahi</h2>
+  <div>Yeh login abhi kisi dukaan se juda nahi, ya band kar diya gaya hai. Apne service dene wale se rabta karein.</div>
+  <button class="big k" id="logout2">Logout</button>
+</div>
+
+<div id="app" hidden>
+  <div class="pend" id="pendBar" hidden></div>
+
+  <div class="card">
+    <div class="hint">Chal rahi bikes</div>
+    <div class="tabs" id="tabs"></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button class="mic needvoice" id="mic">🎤</button>
+      <div class="hint">Dabayein, bolain: "RNE 8485, chain kasna do sau, brake shoe char sau pachas". Phir dobara dabayein.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🏍️ Bike Number</h2>
+    <div class="row"><input id="bike" placeholder="RNE 8485" autocapitalize="characters"><button class="add needvoice" id="bikeMic">🎤</button></div>
+    <div id="hist"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔧 Kaam (Mazdoori)</h2>
+    <div id="work"></div>
+    <div class="row"><input id="workIn" placeholder="chain kasna 200"><button class="add pl" id="addWork">+</button><button class="add needvoice" id="workMic">🎤</button></div>
+  </div>
+
+  <div class="card">
+    <h2>⚙️ Parts</h2>
+    <div id="parts"></div>
+    <div class="row"><input id="partIn" placeholder="brake shoe 450 / 2 spark plug 300"><button class="add pl" id="addPart">+</button><button class="add needvoice" id="partMic">🎤</button></div>
+  </div>
+
+  <div class="card">
+    <h2>👤 Customer (Zaroori Nahi)</h2>
+    <div class="row"><input id="cName" placeholder="Naam"><button class="add needvoice" id="cNameMic">🎤</button></div>
+    <div class="row"><input id="cPhone" type="tel" placeholder="Phone 03xx..."><button class="add needvoice" id="cPhoneMic">🎤</button></div>
+    <div class="hint" id="phHint"></div>
+    <div class="hint">Agli service</div>
+    <select id="nextS"><option value="">Nahi</option><option value="7">1 Week</option><option value="30">1 Month</option><option value="45">1.5 Month</option></select>
+    <div class="hint">Discount (rupay)</div>
+    <input id="disc" type="number" inputmode="numeric" placeholder="0">
+    <div class="warn" id="prevBox" hidden><label><input type="checkbox" id="takePrev" checked><span id="prevTxt"></span></label></div>
+    <div class="hint">Kitne paise mile? (khali = poore mile)</div>
+    <input id="paid" type="number" inputmode="numeric" placeholder="Poore mile">
+    <div class="hint" id="brk" style="text-align:center"></div>
+    <div class="total" id="total">Total: 0</div>
+    <button class="big b needtts" id="speak" hidden>🔊 Bill sunayen</button>
+    <button class="big g" id="waNow" style="background:#128c7e">📲 WhatsApp</button>
+    <button class="big g" id="print">🖨️ Print + Save</button>
+    <button class="big b" id="save">💾 Sirf Save</button>
+    <button class="big k" id="clear">🆕 Nayi Bike</button>
+  </div>
+
+  <div class="card">
+    <h2><span class="cal"><b id="calM"></b><i id="calD"></i></span>Aaj Ka Hisaab</h2>
+    <div id="today" style="font-size:22px"></div>
+    <div id="todayList"></div>
+  </div>
+
+  <div class="card">
+    <h2>📖 Purane Bills</h2>
+    <div class="hint" id="allHint"></div>
+    <div id="all"></div>
+    <button class="big k" id="moreDates" hidden>Aur purani tareekhein dikhayein</button>
+  </div>
+
+  <div class="card" id="own">
+    <h2>🔒 Maalik ka hissa</h2>
+    <div id="ownLock">
+      <input id="pin" type="password" inputmode="numeric" placeholder="PIN">
+      <button class="big b" id="pinGo">Kholein</button>
+      <div class="hint" id="pinHint">Pehli baar: naya PIN likhein (4 ya zyada ank), aur yaad rakhein.</div>
+    </div>
+    <div id="ownBody" hidden>
+      <button class="big k" id="lockBtn">🔒 Band karein</button>
+
+      <h2>📈 Aaj ka live hisaab</h2>
+      <div id="live"></div>
+
+      <h2>📦 Stock</h2>
+      <div class="hint" id="lowHint"></div><div id="lowList"></div>
+      <button class="big b needtts" id="lowSay" hidden>🔊 Kya khatam ho raha hai</button>
+      <button class="big g" id="lowWa" hidden>📲 Khareedna hai list WhatsApp par</button>
+      <div class="row"><button class="mic small needvoice" id="stMic">🎤</button><input id="stIn" placeholder="chain cover 10"><button class="add pl" id="stAdd">+</button></div>
+      <input id="stBrand" placeholder="Company (zaroori nahi) jaise Lifan">
+      <input id="stCost" type="number" inputmode="numeric" placeholder="Kharid qeemat (ek ki), zaroori nahi">
+      <div class="hint" id="stVal"></div>
+      <div id="stList"></div>
+      <div class="hint">Kam stock ki hadd (jis item ki apni hadd na likhi ho)</div>
+      <input id="lim" type="number" inputmode="numeric">
+
+      <h2>💳 Udhaar</h2>
+      <div class="hint" id="udhToday"></div>
+      <div id="udh"></div>
+
+      <h2>📆 Hisaab ki file</h2>
+      <div class="hint">Annual → Half-Yearly → Quarterly → Monthly → Daily</div>
+      <div id="tree"></div>
+
+      <h2>📥 Mahine ki Excel</h2>
+      <input id="xlMonth" type="month">
+      <button class="big g" id="xlGo">Excel banayein</button>
+
+      <h2>🔔 Service ki yaad</h2><div id="svc"></div>
+      <h2>🌐 Bahar se liya hua</h2><div id="outl"></div>
+    </div>
+  </div>
+
+  <div class="card" id="adminCard" hidden>
+    <h2>🛠️ Admin: Clients</h2>
+    <div class="hint">Har dukaan par dabayein: figures aur switch khulenge.</div>
+    <div id="shopList"></div>
+    <h2>➕ Naya client</h2>
+    <div class="hint">Pehle Supabase mein client ka login banayein (Auto Confirm), phir yahan us ka email aur dukaan ka naam likhein.</div>
+    <input id="nsName" placeholder="Dukaan ka naam">
+    <input id="nsEmail" type="email" placeholder="Client ka login email">
+    <button class="big g" id="newShop">Client banayein</button>
+    <h2>🔑 OpenAI key (sab dukaanon ke liye)</h2>
+    <input id="keyAll" type="password" placeholder="sk-..." autocomplete="off">
+    <button class="big b" id="setKey">Key lagayein</button>
+    <div class="hint" id="keyState"></div>
+  </div>
+
+  <div class="card">
+    <div class="hint">Dukaan: <b id="shopName"></b></div>
+    <div class="hint" id="voiceState"></div>
+    <button class="big k" id="logout">Logout</button>
+  </div>
+</div>
+
+<div class="bar" id="bar">Tayyar</div>
+<script src="app.js"></script>
+<script src="owner.js"></script>
+<script src="admin.js"></script>
+</body></html>
