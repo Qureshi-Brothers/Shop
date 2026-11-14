@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=12;
+const VER=13;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -158,7 +158,7 @@ const qn=x=>(x.q>1?x.q+" x ":"")+x.n+(x.c?" ("+cap(x.c)+")":"");
 function parseItem(t){
   const k=fix(t).trim().split(/\s+/).filter(Boolean);let p=0,q=1;
   const isQ=s=>/^(x\d+|\d+x|\d+)$/i.test(s),qv=s=>+s.replace(/x/ig,"");
-  if(k.length>1&&/^\d+$/.test(k[k.length-1]))p=+k.pop();
+  if(k.length>1){const m=/^(?:rs\.?)?(\d+)$/i.exec(k[k.length-1]);if(m){p=+m[1];k.pop();if(k.length>1&&/^rs\.?$/i.test(k[k.length-1]))k.pop()}}
   if(k.length>1&&isQ(k[k.length-1]))q=qv(k.pop());
   else if(k.length>1&&isQ(k[0]))q=qv(k.shift());
   return{n:k.join(" ")||"-",p,...(q>1?{q}:{})};
