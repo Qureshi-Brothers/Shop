@@ -160,10 +160,12 @@ details{margin-top:8px}summary{font-size:19px}
 
       <button class="big b" id="invBtn">📦 Inventory (Stock)</button>
       <div id="invBox" hidden>
-        <div class="row"><button class="mic small needvoice" id="stMic">🎤</button><input id="stIn" placeholder="Item ka naam"><input id="stQty" type="number" inputmode="numeric" placeholder="QTY" style="flex:none;width:130px"><button class="add pl" id="stAdd">+</button></div>
+        <div class="row"><button class="mic small needvoice" id="stMic">🎤</button><input id="stIn" placeholder="Item ka naam"><input id="stQty" type="number" inputmode="numeric" placeholder="QTY" style="flex:none;width:84px;padding:10px 6px;text-align:center"><button class="add pl" id="stAdd">+</button></div>
         <input id="stBrand" placeholder="Company (zaroori nahi) jaise Lifan">
         <input id="stCost" type="number" inputmode="numeric" placeholder="Kharid qeemat (ek ki), zaroori nahi">
         <div class="hint" id="stVal"></div>
+        <h2>🔍 Item dhoondein</h2>
+        <div class="row"><input id="stFind" placeholder="Naam, company ya box likhein"><button class="add" id="stFindX" style="background:#57534e" hidden>✕</button><button class="add needvoice" id="stFindMic">🎤</button></div>
         <button class="big k" id="stTog">▼ Stock list dikhayein</button>
         <div id="stList" hidden></div>
         <div class="hint">Kam stock ki hadd (jis item ki apni hadd na likhi ho)</div>
@@ -221,7 +223,7 @@ details{margin-top:8px}summary{font-size:19px}
 </div>
 
 <div class="bar" id="bar">Tayyar</div>
-<script src="app.js?v=17"></script>
-<script src="owner.js?v=17"></script>
-<script src="admin.js?v=17"></script>
+<script src="app.js?v=18"></script>
+<script src="owner.js?v=18"></script>
+<script src="admin.js?v=18"></script>
 </body></html>

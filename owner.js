@@ -79,6 +79,16 @@ $("invBtn").onclick=()=>invShow($("invBox").hidden);
 $("invClose").onclick=()=>{invShow(false);$("invBtn").scrollIntoView({block:"center"})};
 const stTogText=()=>{$("stTog").textContent=$("stList").hidden?"▼ Stock list dikhayein ("+stk.length+")":"▲ Stock list band karein"};
 $("stTog").onclick=()=>{const l=$("stList");l.hidden=!l.hidden;stTogText();if(l.hidden)$("stTog").scrollIntoView({block:"center"})};
+/* inventory mein dhoondna: likh kar ya bol kar */
+const FINDSYS='A motorcycle mechanic in Pakistan says (Urdu, Hindi or English) which stock item he is looking for. You get JSON {"said":"","items":[...]} where items are the names in his stock list. Return the shortest search text in Latin letters, lowercase, that is contained in the matching item name(s) from the list (for example "chain" or "brake shoe"). If nothing in the list matches, return what he said transliterated to Latin letters. Return JSON only: {"q":""}';
+const stFindQ=()=>sk($("stFind").value);
+function stFindGo(){$("stFindX").hidden=!$("stFind").value;if($("stFind").value)$("stList").hidden=false;stockRender()}
+$("stFind").oninput=stFindGo;
+$("stFindX").onclick=()=>{$("stFind").value="";stFindGo()};
+$("stFindMic").onclick=()=>recOnce($("stFindMic"),async blob=>{
+  const t=await tr(blob,HINT),o=await ask(FINDSYS,JSON.stringify({said:t,items:[...new Set(stk.map(s=>s.name+(s.brand?" "+s.brand:"")))]}));
+  $("stFind").value=(o.q||t||"").trim();stFindGo();say("Dhoonda: "+$("stFind").value);
+},10000);
 /* box number: Supabase mein "box" ka khana ho to wahan, warna isi phone mein save */
 const boxKey=()=>"box_"+((ME&&ME.shop_id)||""),boxId=s=>s.name+"|"+(s.brand||"");
 const boxOf=s=>s.box!=null&&s.box!==""?s.box:(ls.get(boxKey(),{})[boxId(s)]||"");
@@ -110,9 +120,12 @@ function stockRender(){
   $("stVal").textContent="Maal ki kul qeemat (kharid ke hisaab se): Rs "+tot;
   const sl=$("stList");sl.innerHTML="";
   stTogText();
-  const cnt={};stk.forEach(s=>cnt[s.name]=(cnt[s.name]||0)+1);
+  const fq=stFindQ().split(" ").filter(Boolean);
+  const view=fq.length?stk.filter(s=>{const h=s.name+" "+(s.brand||"")+" "+sk(boxOf(s));return fq.every(w=>h.includes(w))}):stk;
+  if(fq.length){const n=document.createElement("div");n.className="hint";n.textContent=view.length?view.length+" item mile":"Koi item nahi mila";sl.append(n)}
+  const cnt={};view.forEach(s=>cnt[s.name]=(cnt[s.name]||0)+1);
   let lastName="";
-  stk.forEach(s=>{
+  view.forEach(s=>{
     if(s.name!==lastName&&cnt[s.name]>1){
       const sum=stk.filter(z=>z.name===s.name).reduce((t,z)=>t+z.qty,0);
       const h=document.createElement("div");h.className="fold";h.textContent="📦 "+cap(s.name)+": kul "+sum;sl.append(h)}
