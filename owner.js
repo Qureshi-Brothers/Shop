@@ -12,7 +12,7 @@ $("pinGo").onclick=async()=>{
   unlocked=true;$("pin").value="";h$.textContent="";openOwn();
 };
 $("pin").onkeydown=e=>{if(e.key==="Enter")$("pinGo").click()};
-$("lockBtn").onclick=()=>{unlocked=false;$("invBox").hidden=true;$("lowList").hidden=true;$("ownBody").hidden=true;$("ownLock").hidden=false;render()};
+$("lockBtn").onclick=()=>{unlocked=false;$("invBox").hidden=true;$("lowList").hidden=false;$("ownBody").hidden=true;$("ownLock").hidden=false;render()};
 async function refreshOuts(){try{outs=await db("outside?select=*&order=created_at.desc&limit=60")||[]}catch(e){outs=[]}}
 async function openOwn(){$("ownLock").hidden=true;$("ownBody").hidden=false;$("lim").value=LIM();$("xlMonth").value=dk(new Date()).slice(0,7);await refreshOuts();ownRender(true);render()}
 $("lim").onchange=e=>{ls.set("lim",+e.target.value||5);ownRender(true)};
@@ -84,7 +84,7 @@ function stockRender(){
   $("invBtn").textContent="📦 Inventory (Stock)"+(low.length?" · ⚠️ "+low.length+" kam":"");
   const ll=$("lowList");ll.innerHTML="";
   low.forEach((s,i)=>{const d=row2((i+1)+". "+stName(s)+" — "+s.qty+" bacha");d.style.background="#fde2e0";ll.append(d)});
-  $("lowTog").hidden=!low.length;if(!low.length)ll.hidden=true;
+  $("lowTog").hidden=!low.length;
   $("lowTog").textContent=ll.hidden?"▼ List dikhayein ("+low.length+")":"▲ List band karein";
   $("lowWa").hidden=!low.length;$("lowSay").hidden=!(low.length&&canSay);
   $("lowWa").onclick=()=>wa(ME.wa_number||"","Khareedna hai ("+SHOP+"):\n"+low.map((s,i)=>(i+1)+". "+stName(s)+" ("+s.qty+" bacha)").join("\n"));
