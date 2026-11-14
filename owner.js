@@ -12,7 +12,7 @@ $("pinGo").onclick=async()=>{
   unlocked=true;$("pin").value="";h$.textContent="";openOwn();
 };
 $("pin").onkeydown=e=>{if(e.key==="Enter")$("pinGo").click()};
-$("lockBtn").onclick=()=>{unlocked=false;$("ownBody").hidden=true;$("ownLock").hidden=false;render()};
+$("lockBtn").onclick=()=>{unlocked=false;$("invBox").hidden=true;$("lowList").hidden=true;$("ownBody").hidden=true;$("ownLock").hidden=false;render()};
 async function refreshOuts(){try{outs=await db("outside?select=*&order=created_at.desc&limit=60")||[]}catch(e){outs=[]}}
 async function openOwn(){$("ownLock").hidden=true;$("ownBody").hidden=false;$("lim").value=LIM();$("xlMonth").value=dk(new Date()).slice(0,7);await refreshOuts();ownRender(true);render()}
 $("lim").onchange=e=>{ls.set("lim",+e.target.value||5);ownRender(true)};
@@ -72,13 +72,20 @@ $("stMic").onclick=()=>recOnce($("stMic"),async blob=>{
 },20000);
 const patchStock=(s,body)=>db("stock?name=eq."+enc(s.name)+"&brand=eq."+enc(s.brand||""),{method:"PATCH",headers:MIN,body:JSON.stringify(body)});
 function lowItems(){return stk.filter(lowOf)}
+const invShow=on=>{$("invBox").hidden=!on;if(on)$("invBox").scrollIntoView({behavior:"smooth",block:"start"})};
+$("invBtn").onclick=()=>invShow($("invBox").hidden);
+$("invClose").onclick=()=>{invShow(false);$("invBtn").scrollIntoView({block:"center"})};
+$("lowTog").onclick=()=>{const ll=$("lowList");ll.hidden=!ll.hidden;$("lowTog").textContent=ll.hidden?"▼ List dikhayein ("+ll.children.length+")":"▲ List band karein"};
 function stockRender(){
   const low=lowItems(),canSay=ME&&ME.tts&&voiceOK();
   $("lowHint").textContent=low.length?"⚠️ Khareedna hai ("+low.length+")":"Sab stock theek hai ✔";
+  $("invBtn").textContent="📦 Inventory (Stock)"+(low.length?" · ⚠️ "+low.length+" kam":"");
   const ll=$("lowList");ll.innerHTML="";
-  low.forEach(s=>{const d=row2(stName(s)+" — "+s.qty+" bacha");d.style.background="#fde2e0";ll.append(d)});
+  low.forEach((s,i)=>{const d=row2((i+1)+". "+stName(s)+" — "+s.qty+" bacha");d.style.background="#fde2e0";ll.append(d)});
+  $("lowTog").hidden=!low.length;if(!low.length)ll.hidden=true;
+  $("lowTog").textContent=ll.hidden?"▼ List dikhayein ("+low.length+")":"▲ List band karein";
   $("lowWa").hidden=!low.length;$("lowSay").hidden=!(low.length&&canSay);
-  $("lowWa").onclick=()=>wa(ME.wa_number||"","Khareedna hai ("+SHOP+"):\n"+low.map(s=>"- "+stName(s)+" ("+s.qty+" bacha)").join("\n"));
+  $("lowWa").onclick=()=>wa(ME.wa_number||"","Khareedna hai ("+SHOP+"):\n"+low.map((s,i)=>(i+1)+". "+stName(s)+" ("+s.qty+" bacha)").join("\n"));
   $("lowSay").onclick=()=>{const names=low.map(s=>s.name+(s.brand?" "+s.brand:""));speakSentence(LOWSYS,{items:names},"Khareedna hai: "+names.join(", "))};
   const tot=stk.reduce((t,s)=>t+s.qty*(s.cost||0),0);
   $("stVal").textContent="Maal ki kul qeemat (kharid ke hisaab se): Rs "+tot;

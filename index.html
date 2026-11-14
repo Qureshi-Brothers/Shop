@@ -147,20 +147,20 @@ details{margin-top:8px}summary{font-size:19px}
     <div id="ownBody" hidden>
       <button class="big k" id="lockBtn">🔒 Band karein</button>
 
+      <button class="big b" id="invBtn">📦 Inventory (Stock)</button>
+      <div id="invBox" hidden>
+        <div class="row"><button class="mic small needvoice" id="stMic">🎤</button><input id="stIn" placeholder="chain cover 10"><button class="add pl" id="stAdd">+</button></div>
+        <input id="stBrand" placeholder="Company (zaroori nahi) jaise Lifan">
+        <input id="stCost" type="number" inputmode="numeric" placeholder="Kharid qeemat (ek ki), zaroori nahi">
+        <div class="hint" id="stVal"></div>
+        <div id="stList"></div>
+        <div class="hint">Kam stock ki hadd (jis item ki apni hadd na likhi ho)</div>
+        <input id="lim" type="number" inputmode="numeric">
+        <button class="big k" id="invClose">▲ Inventory band karein</button>
+      </div>
+
       <h2>📈 Aaj ka live hisaab</h2>
       <div id="live"></div>
-
-      <h2>📦 Stock</h2>
-      <div class="hint" id="lowHint"></div><div id="lowList"></div>
-      <button class="big b needtts" id="lowSay" hidden>🔊 Kya khatam ho raha hai</button>
-      <button class="big g" id="lowWa" hidden>📲 Khareedna hai list WhatsApp par</button>
-      <div class="row"><button class="mic small needvoice" id="stMic">🎤</button><input id="stIn" placeholder="chain cover 10"><button class="add pl" id="stAdd">+</button></div>
-      <input id="stBrand" placeholder="Company (zaroori nahi) jaise Lifan">
-      <input id="stCost" type="number" inputmode="numeric" placeholder="Kharid qeemat (ek ki), zaroori nahi">
-      <div class="hint" id="stVal"></div>
-      <div id="stList"></div>
-      <div class="hint">Kam stock ki hadd (jis item ki apni hadd na likhi ho)</div>
-      <input id="lim" type="number" inputmode="numeric">
 
       <h2>💳 Udhaar</h2>
       <div class="hint" id="udhToday"></div>
@@ -176,6 +176,13 @@ details{margin-top:8px}summary{font-size:19px}
 
       <h2>🔔 Service ki yaad</h2><div id="svc"></div>
       <h2>🌐 Bahar se liya hua</h2><div id="outl"></div>
+
+      <h2>🛒 Khareedna hai</h2>
+      <div class="hint" id="lowHint"></div>
+      <button class="big k" id="lowTog" hidden>List dikhayein</button>
+      <div id="lowList" hidden></div>
+      <button class="big b needtts" id="lowSay" hidden>🔊 Kya khatam ho raha hai</button>
+      <button class="big g" id="lowWa" hidden>📲 Khareedna hai list WhatsApp par</button>
     </div>
   </div>
 
