@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=7;
+const VER=8;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -94,7 +94,7 @@ function renderTabs(){
   const el=$("tabs");el.innerHTML="";
   jobs.forEach((j,i)=>{
     const b=document.createElement("button");b.className="tab"+(i===ji?" on":"");
-    const t=document.createElement("span");t.textContent=(i===ji?cj.bike:j.bike)||"Nayi bike";b.append(t);
+    const t=document.createElement("span");t.textContent=(i===ji?cj.bike:j.bike)||"New Bikes";b.append(t);
     b.onclick=()=>{if(i!==ji)switchTo(i)};
     if(i===ji){const c=document.createElement("span");c.className="cl";c.textContent="✕";
       c.onclick=e=>{e.stopPropagation();
@@ -103,7 +103,7 @@ function renderTabs(){
       b.append(c)}
     el.append(b);
   });
-  const n=document.createElement("button");n.className="tab new";n.textContent="➕ Nayi bike";n.onclick=addJob;el.append(n);
+  const n=document.createElement("button");n.className="tab new";n.textContent="➕ New Bikes";n.onclick=addJob;el.append(n);
 }
 
 async function start(){
