@@ -61,10 +61,12 @@ async function stockAdd(name,brand,qty,cost){
   await logStock([{name:key,brand:br,delta:qty,why:"add"}]);
 }
 $("stAdd").onclick=async()=>{
-  const v=$("stIn").value.trim();if(!v)return;const it=parseItem(v);
-  try{await stockAdd(it.n,$("stBrand").value,it.p||1,$("stCost").value);$("stIn").value="";$("stBrand").value="";$("stCost").value="";ownRender(true);say("Stock jama ✔")}
+  const v=$("stIn").value.trim();if(!v)return;
+  const q=Math.round(+$("stQty").value)||0,it=q>0?{n:v,p:q}:parseItem(v);
+  try{await stockAdd(it.n,$("stBrand").value,it.p||1,$("stCost").value);$("stIn").value="";$("stQty").value="";$("stBrand").value="";$("stCost").value="";ownRender(true);say("Stock jama ✔")}
   catch(e){say("Stock nahi bana: "+e.message)}
 };
+$("stQty").onkeydown=e=>{if(e.key==="Enter")$("stAdd").click()};
 $("stMic").onclick=()=>recOnce($("stMic"),async blob=>{
   const t=await tr(blob,HINT),o=await ask(STSYS,t);
   for(const i of o.items||[])await stockAdd(i.name,i.brand||"",Math.round(+i.qty)||0,i.cost);
