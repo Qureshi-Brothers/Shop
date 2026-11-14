@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=15;
+const VER=16;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -73,6 +73,42 @@ $("go").onclick=async()=>{
   catch(e){$("lerr").textContent=/invalid/i.test(e.message)?"Email ya password ghalat hai":isNet(e)?"Internet nahi hai":e.message}
 };
 $("pw").onkeydown=e=>{if(e.key==="Enter")$("go").click()};
+/* ---------- password bhool gaye: email par link, phir naya password ---------- */
+let REC=null;
+$("forgot").onclick=async()=>{
+  const em=$("em").value.trim(),er=$("lerr");
+  if(!em){er.textContent="Pehle upar apni email likhein, phir yeh dabayein";$("em").focus();return}
+  er.textContent="Bhej raha hoon...";
+  try{
+    const r=await fetch(SUPA+"/auth/v1/recover?redirect_to="+enc(location.origin+location.pathname),{method:"POST",headers:{apikey:ANON,"Content-Type":"application/json"},body:JSON.stringify({email:em})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(r.status===429?"Thori der baad dobara koshish karein (email ki hadd)":(j.msg||j.error_description||j.message||("Error "+r.status)));
+    er.textContent="Agar yeh email darj hai to us par link bhej diya gaya hai. Email kholein aur link dabayein.";
+  }catch(e){er.textContent=isNet(e)?"Internet nahi hai":e.message}
+};
+function recoveryStart(){
+  const h=new URLSearchParams(location.hash.replace(/^#/,""));
+  if(!h.get("access_token")&&!h.get("error"))return false;
+  try{history.replaceState(null,"",location.pathname)}catch(e){}
+  if(h.get("error")){S=null;ls.del("sess");show();$("lerr").textContent="Link purana ya ghalat hai. Dobara \"Password bhool gaye?\" dabayein.";return true}
+  if(h.get("type")!=="recovery")return false;
+  REC={access_token:h.get("access_token"),refresh_token:h.get("refresh_token"),exp:Date.now()+(+h.get("expires_in")||3600)*1000};
+  $("login").hidden=true;$("app").hidden=true;$("noshop").hidden=true;$("newpw").hidden=false;
+  return true;
+}
+$("npEye").onclick=()=>{const i=$("np"),on=i.type==="password";i.type=on?"text":"password";$("npEye").textContent=on?"🙈":"👁️"};
+$("npGo").onclick=async()=>{
+  const v=$("np").value,er=$("nperr");
+  if(v.length<6){er.textContent="Kam se kam 6 harf likhein";return}
+  er.textContent="Save ho raha hai...";
+  try{
+    const r=await fetch(SUPA+"/auth/v1/user",{method:"PUT",headers:{apikey:ANON,Authorization:"Bearer "+REC.access_token,"Content-Type":"application/json"},body:JSON.stringify({password:v})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.msg||j.error_description||j.message||("Error "+r.status));
+    ls.del("me_cache");ls.del("c_bills");ls.del("c_stk");started=false;
+    S=REC;REC=null;ls.set("sess",S);$("np").value="";er.textContent="";$("newpw").hidden=true;show();say("Naya password lag gaya ✔");
+  }catch(e){er.textContent=isNet(e)?"Internet nahi hai":e.message}
+};
 $("logout").onclick=logout;$("logout2").onclick=logout;
 $("pwEye").onclick=()=>{const i=$("pw"),on=i.type==="password";i.type=on?"text":"password";$("pwEye").textContent=on?"🙈":"👁️"};
 {const b=$("logoutTop");let t=0;b.onclick=()=>{if(b.dataset.s){clearTimeout(t);b.dataset.s="";b.textContent="Logout";b.style.background="#57534e";logout();return}b.dataset.s=1;b.textContent="Dobara dabayein";b.style.background="#b91c1c";t=setTimeout(()=>{b.dataset.s="";b.textContent="Logout";b.style.background="#57534e"},3000)}}
@@ -637,6 +673,7 @@ $("updGo").onclick=async()=>{
 };
 function boot(){
   if(/[?&]login(&|=|$)/.test(location.search)){S=null;ls.del("sess");ls.del("me_cache");try{history.replaceState(null,"",location.pathname)}catch(e){}}
-  show();checkVersion();
+  if(!recoveryStart())show();
+  checkVersion();
   if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
