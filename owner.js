@@ -83,7 +83,8 @@ function stockRender(){
   $("lowHint").textContent=low.length?"⚠️ Khareedna hai ("+low.length+")":"Sab stock theek hai ✔";
   $("invBtn").textContent="📦 Inventory (Stock)"+(low.length?" · ⚠️ "+low.length+" kam":"");
   const ll=$("lowList");ll.innerHTML="";
-  low.forEach((s,i)=>{const d=row2((i+1)+". "+stName(s)+" — "+s.qty+" bacha");d.style.background="#fde2e0";ll.append(d)});
+  low.forEach((s,i)=>{const ex=[];if(canSay){const sp=sm("🔊",()=>speakSentence(LOWSYS,{items:[s.name+(s.brand?" "+s.brand:"")]},s.name+(s.brand?" "+s.brand:"")));sp.style.background="#1d5fb4";ex.push(sp)}
+    const d=row2((i+1)+". "+stName(s)+" — "+s.qty+" bacha",ex);d.style.background="#fde2e0";ll.append(d)});
   $("lowTog").hidden=!low.length;
   $("lowTog").textContent=ll.hidden?"▼ List dikhayein ("+low.length+")":"▲ List band karein";
   $("lowWa").hidden=!low.length;$("lowSay").hidden=!(low.length&&canSay);
