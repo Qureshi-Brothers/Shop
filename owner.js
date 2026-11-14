@@ -12,9 +12,9 @@ $("pinGo").onclick=async()=>{
   unlocked=true;$("pin").value="";h$.textContent="";openOwn();
 };
 $("pin").onkeydown=e=>{if(e.key==="Enter")$("pinGo").click()};
-$("lockBtn").onclick=()=>{unlocked=false;$("invBox").hidden=true;$("lowList").hidden=false;$("ownBody").hidden=true;$("ownLock").hidden=false;render()};
+$("lockBtn").onclick=()=>{unlocked=false;$("invBox").hidden=true;$("lowList").hidden=false;$("stList").hidden=true;$("ownBody").hidden=true;$("ownLock").hidden=false;render()};
 async function refreshOuts(){try{outs=await db("outside?select=*&order=created_at.desc&limit=60")||[]}catch(e){outs=[]}}
-async function openOwn(){$("ownLock").hidden=true;$("ownBody").hidden=false;$("lim").value=LIM();$("xlMonth").value=dk(new Date()).slice(0,7);await refreshOuts();ownRender(true);render()}
+async function openOwn(){$("ownLock").hidden=true;$("ownBody").hidden=false;$("lim").value=LIM();$("xlMonth").value=dk(new Date()).slice(0,7);await refreshOuts();ownRender(true);render();boxSync().then(()=>ownRender(true))}
 $("lim").onchange=e=>{ls.set("lim",+e.target.value||5);ownRender(true)};
 
 /* ---------- hisaab ke figures ---------- */
@@ -77,6 +77,22 @@ function lowItems(){return stk.filter(lowOf)}
 const invShow=on=>{$("invBox").hidden=!on;if(on)$("invBox").scrollIntoView({behavior:"smooth",block:"start"})};
 $("invBtn").onclick=()=>invShow($("invBox").hidden);
 $("invClose").onclick=()=>{invShow(false);$("invBtn").scrollIntoView({block:"center"})};
+const stTogText=()=>{$("stTog").textContent=$("stList").hidden?"▼ Stock list dikhayein ("+stk.length+")":"▲ Stock list band karein"};
+$("stTog").onclick=()=>{const l=$("stList");l.hidden=!l.hidden;stTogText();if(l.hidden)$("stTog").scrollIntoView({block:"center"})};
+/* box number: Supabase mein "box" ka khana ho to wahan, warna isi phone mein save */
+const boxKey=()=>"box_"+((ME&&ME.shop_id)||""),boxId=s=>s.name+"|"+(s.brand||"");
+const boxOf=s=>s.box!=null&&s.box!==""?s.box:(ls.get(boxKey(),{})[boxId(s)]||"");
+async function boxSet(s,v){
+  const m=ls.get(boxKey(),{});
+  try{await patchStock(s,{box:v||null});s.box=v||null;delete m[boxId(s)]}
+  catch(e){if(isNet(e)||/Internet/.test(e.message)){say("Internet nahi hai, box save nahi hua");return}if(v)m[boxId(s)]=v;else delete m[boxId(s)]}
+  ls.set(boxKey(),m);say("Box save ✔");
+}
+async function boxSync(){
+  const m=ls.get(boxKey(),{});
+  for(const s of stk){const v=m[boxId(s)];if(!v||s.box)continue;try{await patchStock(s,{box:v});s.box=v;delete m[boxId(s)]}catch(e){return}}
+  ls.set(boxKey(),m);
+}
 $("lowTog").onclick=()=>{const ll=$("lowList");ll.hidden=!ll.hidden;$("lowTog").textContent=ll.hidden?"▼ List dikhayein ("+ll.children.length+")":"▲ List band karein"};
 function stockRender(){
   const low=lowItems(),canSay=ME&&ME.tts&&voiceOK();
@@ -93,6 +109,7 @@ function stockRender(){
   const tot=stk.reduce((t,s)=>t+s.qty*(s.cost||0),0);
   $("stVal").textContent="Maal ki kul qeemat (kharid ke hisaab se): Rs "+tot;
   const sl=$("stList");sl.innerHTML="";
+  stTogText();
   const cnt={};stk.forEach(s=>cnt[s.name]=(cnt[s.name]||0)+1);
   let lastName="";
   stk.forEach(s=>{
@@ -102,6 +119,7 @@ function stockRender(){
     lastName=s.name;
     const card=document.createElement("div");card.className="stk"+(lowOf(s)?" low":"");
     const t=document.createElement("div");t.className="t";
+    const bx=document.createElement("input");bx.placeholder="Box";bx.value=boxOf(s);bx.style.cssText="flex:none;width:76px;font-size:18px;padding:6px;margin:0;text-align:center";bx.onchange=()=>boxSet(s,bx.value.trim());t.append(bx);
     const nm=document.createElement("span");nm.textContent=stName(s);t.append(nm);
     if(canSay){const sp=sm("🔊",()=>speakSentence(LOWSYS,{items:[s.name+(s.brand?" "+s.brand:"")]},s.name));sp.style.background="#1d5fb4";t.append(sp)}
     const x=document.createElement("button");x.className="x";x.textContent="✕";
