@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=13;
+const VER=14;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -351,7 +351,19 @@ function billDetails(x){
   if(!x.pending){r.append(btn("✏️",()=>editBill(x)),delBtn(x))}
   d.append(r);return d;
 }
+/* purana grahak: bike number dobara aaye to naam aur phone khud bhar do */
+function custAuto(){
+  const k=norm(cj.bike);if(cj.editId||cj.saved||(cj.autoFor||"")===k)return;
+  let ch=false;
+  if(cj.autoFor){if(cj.autoName&&cj.name===cj.autoName){cj.name="";ch=true}if(cj.autoPhone&&cj.phone===cj.autoPhone){cj.phone="";ch=true}cj.autoFor="";cj.autoName="";cj.autoPhone=""}
+  const b=k.length>=4?bikeBills().find(x=>x.cust_name||x.cust_phone):null;
+  if(b){cj.autoFor=k;
+    if(!cj.name&&b.cust_name){cj.name=cj.autoName=b.cust_name;ch=true}
+    if(!cj.phone&&b.cust_phone){cj.phone=cj.autoPhone=b.cust_phone;ch=true}}
+  if(ch){$("cName").value=cj.name;$("cPhone").value=cj.phone;saveJobs();phCheck()}
+}
 function render(){
+  custAuto();
   renderTabs();
   list($("work"),cj.work);list($("parts"),cj.parts);calc();bikeInfo();
   const now=new Date();$("calM").textContent=MON[now.getMonth()].toUpperCase();$("calD").textContent=now.getDate();
