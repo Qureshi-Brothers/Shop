@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=6;
+const VER=7;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -74,6 +74,7 @@ $("go").onclick=async()=>{
 };
 $("pw").onkeydown=e=>{if(e.key==="Enter")$("go").click()};
 $("logout").onclick=logout;$("logout2").onclick=logout;
+{const b=$("logoutTop");let t=0;b.onclick=()=>{if(b.dataset.s){clearTimeout(t);b.dataset.s="";b.textContent="Logout";b.style.background="#57534e";logout();return}b.dataset.s=1;b.textContent="Dobara dabayein";b.style.background="#b91c1c";t=setTimeout(()=>{b.dataset.s="";b.textContent="Logout";b.style.background="#57534e"},3000)}}
 
 /* ---------- chal rahi bikes (tabs) ---------- */
 const newJob=()=>({bike:"",work:[],parts:[],name:"",phone:"",paid:"",nextS:"",disc:"",takePrev:true,saved:false,editId:null,prevKeep:0});
