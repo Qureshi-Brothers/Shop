@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=18;
+const VER=19;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -14,6 +14,7 @@ const BIKEHINT="Pakistani motorcycle number plate, letters then digits. Examples
 const NAMESYS='The text is a person name said in Urdu, Hindi or English. Write it in Latin letters (Roman Urdu), Title Case, no titles. Return JSON only: {"name":""}';
 const PHONESYS='The text is a Pakistani mobile phone number said in Urdu, Hindi or English, digits may be words or in pairs (zero teen zero zero = 0300). Return only digits, normally 11 digits starting with 03. Return JSON only: {"phone":""}';
 const STSYS='A motorcycle mechanic in Pakistan says stock items he added to his shop, each with how many pieces, sometimes the brand/company, and sometimes the buying price. Names in short English or Roman Urdu using Latin letters. brand is the company name if said (Lifan, Future, Honda...), else empty. cost is the buying price of ONE piece in rupees (0 if not said; if he gives one price for all pieces together, divide by qty). Return JSON only: {"items":[{"name":"","brand":"","qty":0,"cost":0}]}';
+const ITEMSYS='You write what a text-to-speech voice reads aloud to an unlettered Pakistani motorcycle customer for ONE line of his bill. Use simple spoken Urdu in Urdu script. Say the job or part name (transliterated into Urdu script), the company if given, the quantity if more than 1, and the price, writing every number in Urdu words. One short sentence. Return JSON only: {"say":""}';
 const TTSYS='You write what a text-to-speech voice reads aloud to an unlettered Pakistani motorcycle customer to confirm his bill. Use simple spoken Urdu in Urdu script. Say the bike plate letter by letter and digits one by one. Write every number in Urdu words. Say each job and part with its price (and quantity when more than 1, and company if any), then the total to pay, and the amount still owed if any. Keep it short and clear. Return JSON only: {"say":""}';
 const LOWSYS='A shopkeeper who cannot read needs to hear which items he must buy. Write one short spoken sentence in Urdu script: "یہ سامان خریدنا ہے" followed by the item names only (transliterate each name into Urdu script, include brand if given), separated by commas. Do not say any quantities or numbers. Return JSON only: {"say":""}';
 const MERGE={Prefer:"resolution=merge-duplicates,return=minimal"},MIN={Prefer:"return=minimal"};
@@ -342,6 +343,8 @@ function list(el,arr){
       o.onclick=()=>{if(!it.o){it.s=prompt("Kis dukaan se liya? (khali chhod sakte hain)")||""}it.o=!it.o;keep();render()};
       d.append(o);
     }
+    if(ME&&ME.tts&&voiceOK()){const sp=document.createElement("button");sp.className="x";sp.textContent="🔊";sp.style.background="#1d5fb4";
+      sp.onclick=()=>speakSentence(ITEMSYS,{name:it.n,company:it.c||"",qty:it.q||1,price:it.p,kind:isP?"part":"job"},it.n+" "+it.p+" rupay");d.append(sp)}
     const x=document.createElement("button");x.className="x";x.textContent="✕";
     x.onclick=()=>{arr.splice(i,1);keep();render()};
     d.append(x);el.append(d);
