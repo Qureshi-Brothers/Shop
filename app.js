@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=20;
+const VER=21;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -192,7 +192,7 @@ const discV=()=>Math.max(0,Math.min(total(),+$("disc").value||0));
 const prevV=()=>cj.editId?cj.prevKeep:(cj.takePrev?bikeDue():0);
 const payable=()=>total()-discV()+prevV();
 const paidV=()=>{const v=$("paid").value,p=payable();return v===""?p:Math.max(0,Math.min(p,+v||0))};
-const strip=a=>a.map(x=>({n:x.n,p:x.p,...(x.q>1?{q:x.q}:{}),...(x.c?{c:x.c}:{}),...(x.o?{o:1,s:x.s||""}:{})}));
+const strip=a=>a.map(x=>({n:x.n,p:x.p,...(x.q>1?{q:x.q}:{}),...(x.c?{c:x.c}:{}),...(x.o?{o:1,s:x.s||""}:{}),...(x.m?{m:1}:{})}));
 const addD=d=>{const x=new Date();x.setDate(x.getDate()+(+d));return dk(x)};
 const qn=x=>(x.q>1?x.q+" x ":"")+x.n+(x.c?" ("+cap(x.c)+")":"");
 function parseItem(t){
@@ -236,7 +236,7 @@ async function resolveBrand(it){
   const c=await pickBrand(it.n,br);if(c)it.c=c;
 }
 function stockLocal(items){
-  for(const x of items){if(x.o)continue;const s=pickRow(x);if(s)s.qty=Math.max(0,s.qty-(x.q||1))}
+  for(const x of items){if(x.o||x.m)continue;const s=pickRow(x);if(s)s.qty=Math.max(0,s.qty-(x.q||1))}
 }
 async function logStock(logs){
   if(!logs.length)return;
@@ -245,7 +245,7 @@ async function logStock(logs){
 async function stockApply(items,sign,why){
   const logs=[];
   for(const x of items){
-    if(x.o)continue;
+    if(x.o||x.m)continue;
     const s=pickRow(x);if(!s)continue;
     const nq=Math.max(0,s.qty+sign*(x.q||1)),real=nq-s.qty;s.qty=nq;
     await db("stock?name=eq."+enc(s.name)+"&brand=eq."+enc(s.brand||""),{method:"PATCH",headers:MIN,body:JSON.stringify({qty:s.qty})});
@@ -469,6 +469,12 @@ async function camScan(cb){
 const scanBox=(inp,fn)=>{inp.onkeydown=e=>{if(e.key==="Enter"||e.key==="Tab"){e.preventDefault();const c=inp.value.trim();inp.value="";if(c)fn(c)}}};
 scanBox($("billScanIn"),billScan);
 $("billCam").onclick=()=>camScan(billScan);
+/* misc: chhoti cheezein (washer, nut), qeemat haath se, stock se kuch minus nahi */
+$("miscBtn").onclick=()=>{
+  cj.parts.push({n:"Misc",p:0,m:1});keep();render();
+  const ins=$("parts").querySelectorAll(".item input");const i=ins[ins.length-1];
+  if(i){i.value="";i.focus()}say("Misc ki qeemat likhein");
+};
 $("addWork").onclick=()=>addFrom($("workIn"),cj.work,false);
 $("addPart").onclick=()=>addFrom($("partIn"),cj.parts,true);
 $("workIn").onkeydown=e=>{if(e.key==="Enter")addFrom($("workIn"),cj.work,false)};
