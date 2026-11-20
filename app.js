@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=21;
+const VER=22;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -446,6 +446,7 @@ function billScan(code){
     if(ex){const u=Math.round((ex.p||0)/(ex.q||1));ex.q=(ex.q||1)+1;ex.p=u*ex.q}
     else cj.parts.push({n:cap(r.name),c:br,q:1,p:lastPrice(r.name,br)});
     keep();render();
+    try{$("parts").scrollIntoView({behavior:"smooth",block:"center"})}catch(e){}
     const x=ex||cj.parts[cj.parts.length-1];say("Scan ✔ "+qn(x)+(x.p?" · Rs "+x.p:" · qeemat likhein"));
   });
 }

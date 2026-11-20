@@ -61,13 +61,46 @@ async function stockAdd(name,brand,qty,cost){
   await logStock([{name:key,brand:br,delta:qty,why:"add"}]);
 }
 let pendBC="";
+/* scan ke baad saaf khidki: naam + QTY, save */
+function invScanDlg(code,row){
+  const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99;display:flex;align-items:center;justify-content:center;padding:14px";
+  const c=document.createElement("div");c.className="card";c.style.cssText="width:100%;max-width:460px;margin:0;max-height:92vh;overflow:auto";
+  const h=document.createElement("h2");h.textContent=row?"✔ Item mil gaya":"🆕 Naya item";
+  const bc=document.createElement("div");bc.className="hint";bc.textContent="Barcode: "+code;
+  const mk=(ph,type)=>{const i=document.createElement("input");i.placeholder=ph;if(type){i.type=type;i.inputMode="numeric"}return i};
+  const nm=mk("Item ka naam (jaise Brake Shoe)"),br=mk("Company (zaroori nahi)"),qt=mk("QTY (kitne aaye)","number");
+  qt.style.fontSize="26px";
+  const er=document.createElement("div");er.className="err";
+  const close=()=>{ov.remove();pendBC=""};
+  if(row){nm.value=stName(row);nm.readOnly=true;nm.style.background="#eee";br.hidden=true;const n=document.createElement("div");n.className="hint";n.textContent="Abhi stock: "+row.qty;c.append(h,bc,nm,n)}
+  else{const r=document.createElement("div");r.className="row";r.append(nm);
+    if(voiceOK()){const m=document.createElement("button");m.className="mic small";m.textContent="🎤";
+      m.onclick=()=>recOnce(m,async blob=>{const t=await tr(blob,HINT),it=parseItem(fix(t||""));nm.value=cap(it.n||t||"");if(it.p&&!qt.value)qt.value=it.p;qt.focus()},10000);r.append(m)}
+    c.append(h,bc,r,br)}
+  const sv=document.createElement("button");sv.className="big g";sv.textContent="💾 Stock mein save karein";
+  const cn=document.createElement("button");cn.className="big k";cn.textContent="✕ Band karein";cn.onclick=close;
+  sv.onclick=async()=>{
+    const q=Math.round(+qt.value)||0,name=row?row.name:nm.value.trim(),brand=row?(row.brand||""):br.value.trim();
+    if(!row&&sk(name).length<2){er.textContent="Item ka naam likhein";nm.focus();return}
+    if(q<1){er.textContent="QTY likhein";qt.focus();return}
+    sv.disabled=true;er.textContent="Save ho raha hai...";
+    try{
+      await stockAdd(name,brand,q,"");
+      if(!row){const r=stk.find(z=>z.name===sk(name)&&(z.brand||"")===sk(brand));
+        if(r){try{await patchStock(r,{barcode:code});r.barcode=code}catch(e){say("Stock jama, lekin barcode save nahi hua: "+e.message)}}}
+      close();ownRender(true);say("✔ Stock jama: "+(row?stName(row):cap(name))+" +"+q);
+    }catch(e){sv.disabled=false;er.textContent=isNet(e)?"Internet nahi hai":("Save nahi hua: "+e.message)}
+  };
+  qt.onkeydown=e=>{if(e.key==="Enter")sv.click()};
+  c.append(qt,er,sv,cn);ov.append(c);document.body.append(ov);
+  setTimeout(()=>(row?qt:nm).focus(),50);
+}
 function invScan(code){
   code=String(code||"").trim();if(!code)return;
   $("invBox").hidden=false;
   const rows=bcRows(code);
-  if(rows.length){pickBC(rows,r=>{pendBC="";$("stIn").value=cap(r.name);$("stBrand").value=r.brand||"";$("stQty").value="";$("stQty").focus();say(stName(r)+": kitni QTY aayi? Likh kar + dabayein")});return}
-  pendBC=code;$("stIn").value="";$("stQty").value="";$("stBrand").value="";$("stIn").focus();
-  say("Naya barcode: item ka naam aur QTY likh kar (ya bol kar) + dabayein");
+  if(rows.length){pickBC(rows,r=>invScanDlg(code,r));return}
+  invScanDlg(code,null);
 }
 scanBox($("invScanIn"),invScan);
 $("invCam").onclick=()=>camScan(invScan);
