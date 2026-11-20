@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=23;
+const VER=24;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -452,7 +452,7 @@ function billScan(code){
 }
 async function camScan(cb){
   if(!("BarcodeDetector" in window)){say("Is phone ka browser camera se scan nahi karta. Chrome update karein ya machine lagayein");return}
-  let st;try{st=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})}catch(e){say("Camera ki ijazat nahi mili");return}
+  let st;try{st=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})}catch(e){const n=e&&e.name||"";say(n==="NotAllowedError"?"Camera ki ijazat band hai (Chrome settings mein Allow karein)":n==="NotReadableError"?"Camera koi aur app chala rahi hai, use band karein":n==="NotFoundError"?"Is phone mein camera nahi mila":"Camera nahi chala: "+(n||e.message));return}
   const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:#000;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px";
   const v=document.createElement("video");v.playsInline=true;v.muted=true;v.srcObject=st;v.style.cssText="width:100%;max-height:70vh;object-fit:cover;border-radius:10px";
   const t=document.createElement("div");t.textContent="Barcode camera ke samne rakhein";t.style.cssText="color:#fff;font-size:20px;margin:12px";
