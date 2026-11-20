@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=19;
+const VER=20;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -170,6 +170,8 @@ function applyFlags(){
   const v=voiceOK();
   document.querySelectorAll(".needvoice").forEach(e=>e.hidden=!v);
   document.querySelectorAll(".needtts").forEach(e=>{if(e.id==="speak")e.hidden=!(v&&ME&&ME.tts)});
+  document.querySelectorAll(".needcam").forEach(e=>e.hidden=!(ME&&ME.scan_cam));
+  document.querySelectorAll(".needdev").forEach(e=>e.hidden=!(ME&&ME.scan_dev));
   const t=!v?(ME&&ME.voice===false?"Awaaz is dukaan ke liye band hai":"Awaaz abhi band hai: key nahi lagi"):"Awaaz chalu ✔";
   $("voiceState").textContent=t;
   render();
@@ -424,6 +426,49 @@ async function addFrom(inp,arr,isParts){
   const it=parseItem(v);if(isParts)await resolveBrand(it);
   arr.push(it);inp.value="";keep();render();
 }
+/* ---------- barcode: machine (keyboard ki tarah likhti hai) aur phone camera ---------- */
+const bcRows=c=>stk.filter(x=>(x.barcode||"")===c);
+function lastPrice(name,brand){
+  for(const b of bills){if(b.pending)continue;for(const p of (b.parts||[]))if(sk(p.n)===name&&sk(p.c||"")===brand&&p.p)return Math.round(p.p/(p.q||1))}
+  return 0;
+}
+function pickBC(rows,cb){
+  if(rows.length===1)return cb(rows[0]);
+  const a=+prompt("Is barcode par "+rows.length+" item hain. Number likhein:\n"+rows.map((r,i)=>(i+1)+". "+cap(r.name)+(r.brand?" ("+cap(r.brand)+")":"")).join("\n"));
+  if(rows[a-1])cb(rows[a-1]);
+}
+function billScan(code){
+  code=String(code||"").trim();if(!code)return;
+  const rows=bcRows(code);
+  if(!rows.length){say("Yeh barcode stock mein nahi. Pehle Inventory mein scan kar ke naam dein");return}
+  pickBC(rows,r=>{
+    const br=r.brand||"",ex=cj.parts.find(x=>!x.o&&sk(x.n)===r.name&&sk(x.c||"")===br);
+    if(ex){const u=Math.round((ex.p||0)/(ex.q||1));ex.q=(ex.q||1)+1;ex.p=u*ex.q}
+    else cj.parts.push({n:cap(r.name),c:br,q:1,p:lastPrice(r.name,br)});
+    keep();render();
+    const x=ex||cj.parts[cj.parts.length-1];say("Scan ✔ "+qn(x)+(x.p?" · Rs "+x.p:" · qeemat likhein"));
+  });
+}
+async function camScan(cb){
+  if(!("BarcodeDetector" in window)){say("Is phone ka browser camera se scan nahi karta. Chrome update karein ya machine lagayein");return}
+  let st;try{st=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})}catch(e){say("Camera ki ijazat nahi mili");return}
+  const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;background:#000;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px";
+  const v=document.createElement("video");v.playsInline=true;v.muted=true;v.srcObject=st;v.style.cssText="width:100%;max-height:70vh;object-fit:cover;border-radius:10px";
+  const t=document.createElement("div");t.textContent="Barcode camera ke samne rakhein";t.style.cssText="color:#fff;font-size:20px;margin:12px";
+  const x=document.createElement("button");x.textContent="✕ Band karein";x.className="big k";x.style.width="90%";
+  ov.append(v,t,x);document.body.append(ov);
+  let done=false;const end=()=>{if(done)return;done=true;st.getTracks().forEach(k=>k.stop());ov.remove()};
+  x.onclick=end;
+  try{await v.play()}catch(e){}
+  let det;try{det=new BarcodeDetector()}catch(e){end();say("Camera scan nahi chala");return}
+  const loop=async()=>{if(done)return;
+    try{const r=await det.detect(v);if(r&&r.length&&r[0].rawValue){const c=r[0].rawValue;end();try{navigator.vibrate&&navigator.vibrate(80)}catch(e){}cb(c);return}}catch(e){}
+    setTimeout(loop,250)};
+  loop();
+}
+const scanBox=(inp,fn)=>{inp.onkeydown=e=>{if(e.key==="Enter"||e.key==="Tab"){e.preventDefault();const c=inp.value.trim();inp.value="";if(c)fn(c)}}};
+scanBox($("billScanIn"),billScan);
+$("billCam").onclick=()=>camScan(billScan);
 $("addWork").onclick=()=>addFrom($("workIn"),cj.work,false);
 $("addPart").onclick=()=>addFrom($("partIn"),cj.parts,true);
 $("workIn").onkeydown=e=>{if(e.key==="Enter")addFrom($("workIn"),cj.work,false)};

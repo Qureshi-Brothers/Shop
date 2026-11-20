@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Admin: clients, switch, figures, OpenAI key ===== */
-const SHOPCOLS="id,name,active,tts,voice,phone,address,wa_number,created_at";
+const SHOPCOLS="id,name,active,tts,voice,phone,address,wa_number,scan_cam,scan_dev,created_at";
 const openShops=new Set();
 function adminStart(){loadShops();keyNote()}
 async function loadShops(){
@@ -23,6 +23,8 @@ async function loadShops(){
       det.append(
         mkTog("🎙️ Awaaz (OpenAI)",s.voice!==false,()=>patch({voice:s.voice===false})),
         mkTog("🔊 Sunana (bill aur stock)",!!s.tts,()=>patch({tts:!s.tts})),
+        mkTog("📷 Camera scan",!!s.scan_cam,()=>patch({scan_cam:!s.scan_cam})),
+        mkTog("🔫 Machine scan",!!s.scan_dev,()=>patch({scan_dev:!s.scan_dev})),
         mkTog("Dukaan chalu",!!s.active,()=>{if(own){say("Apni dukaan band nahi kar sakte");return}patch({active:!s.active})}));
       const mkIn=(ph,val)=>{const i=document.createElement("input");i.placeholder=ph;i.value=val||"";return i};
       const ph=mkIn("Dukaan ka phone (bill par)",s.phone),ad=mkIn("Dukaan ka pata (bill par)",s.address),wn=mkIn("Client ka WhatsApp number (khareedna hai list ke liye)",s.wa_number);

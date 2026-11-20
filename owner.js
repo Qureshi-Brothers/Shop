@@ -60,10 +60,25 @@ async function stockAdd(name,brand,qty,cost){
   stk.sort((a,b)=>a.name<b.name?-1:a.name>b.name?1:(a.brand||"")<(b.brand||"")?-1:1);
   await logStock([{name:key,brand:br,delta:qty,why:"add"}]);
 }
+let pendBC="";
+function invScan(code){
+  code=String(code||"").trim();if(!code)return;
+  $("invBox").hidden=false;
+  const rows=bcRows(code);
+  if(rows.length){pickBC(rows,r=>{pendBC="";$("stIn").value=cap(r.name);$("stBrand").value=r.brand||"";$("stQty").value="";$("stQty").focus();say(stName(r)+": kitni QTY aayi? Likh kar + dabayein")});return}
+  pendBC=code;$("stIn").value="";$("stQty").value="";$("stBrand").value="";$("stIn").focus();
+  say("Naya barcode: item ka naam aur QTY likh kar (ya bol kar) + dabayein");
+}
+scanBox($("invScanIn"),invScan);
+$("invCam").onclick=()=>camScan(invScan);
 $("stAdd").onclick=async()=>{
   const v=$("stIn").value.trim();if(!v)return;
   const q=Math.round(+$("stQty").value)||0,it=q>0?{n:v,p:q}:parseItem(v);
-  try{await stockAdd(it.n,$("stBrand").value,it.p||1,$("stCost").value);$("stIn").value="";$("stQty").value="";$("stBrand").value="";$("stCost").value="";ownRender(true);say("Stock jama ✔")}
+  const brIn=$("stBrand").value;
+  try{await stockAdd(it.n,brIn,it.p||1,$("stCost").value);
+    if(pendBC){const r=stk.find(z=>z.name===sk(it.n)&&(z.brand||"")===sk(brIn));
+      if(r){try{await patchStock(r,{barcode:pendBC});r.barcode=pendBC}catch(e){say("Barcode save nahi hua: "+e.message)}}pendBC=""}
+    $("stIn").value="";$("stQty").value="";$("stBrand").value="";$("stCost").value="";ownRender(true);say("Stock jama ✔")}
   catch(e){say("Stock nahi bana: "+e.message)}
 };
 $("stQty").onkeydown=e=>{if(e.key==="Enter")$("stAdd").click()};
