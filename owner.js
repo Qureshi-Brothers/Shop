@@ -12,7 +12,7 @@ $("pinGo").onclick=async()=>{
   unlocked=true;$("pin").value="";h$.textContent="";openOwn();
 };
 $("pin").onkeydown=e=>{if(e.key==="Enter")$("pinGo").click()};
-$("lockBtn").onclick=()=>{unlocked=false;$("invBox").hidden=true;$("lowList").hidden=false;$("stList").hidden=true;$("ownBody").hidden=true;$("ownLock").hidden=false;render()};
+$("lockBtn").onclick=()=>{unlocked=false;$("invBox").hidden=true;$("lowList").hidden=false;$("stList").hidden=true;$("outl").hidden=true;$("ownBody").hidden=true;$("ownLock").hidden=false;render()};
 async function refreshOuts(){try{outs=await db("outside?select=*&order=created_at.desc&limit=60")||[]}catch(e){outs=[]}}
 async function openOwn(){$("ownLock").hidden=true;$("ownBody").hidden=false;$("lim").value=LIM();$("xlMonth").value=dk(new Date()).slice(0,7);await refreshOuts();ownRender(true);render();boxSync().then(()=>ownRender(true))}
 $("lim").onchange=e=>{ls.set("lim",+e.target.value||5);ownRender(true)};
@@ -271,7 +271,10 @@ function outRender(){
   const ol=$("outl");ol.innerHTML="";
   if(!outs.length)ol.textContent="Abhi koi nahi";
   outs.forEach(o=>ol.append(row2(fmtD(new Date(o.created_at))+" · "+o.bike+" · "+o.item+(o.shop?" ("+o.shop+")":"")+" — Rs "+o.price)));
+  outTogText();
 }
+const outTogText=()=>{$("outTog").textContent=$("outl").hidden?"▼ List dikhayein ("+outs.length+")":"▲ List band karein"};
+$("outTog").onclick=()=>{const l=$("outl");l.hidden=!l.hidden;outTogText();if(l.hidden)$("outTog").scrollIntoView({block:"center"})};
 
 /* ---------- mahine ki Excel ---------- */
 function loadXLSX(){
