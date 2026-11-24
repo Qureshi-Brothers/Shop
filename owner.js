@@ -10,6 +10,7 @@ $("pinGo").onclick=async()=>{
     catch(e){h$.textContent="PIN save nahi hua: "+e.message;return}
   }else if(h!==pinHash){h$.textContent="PIN ghalat hai";return}
   unlocked=true;$("pin").value="";h$.textContent="";openOwn();
+  if(afterUnlock){const f=afterUnlock;afterUnlock=null;setTimeout(f,350)}
 };
 $("pin").onkeydown=e=>{if(e.key==="Enter")$("pinGo").click()};
 $("lockBtn").onclick=()=>{unlocked=false;$("invBox").hidden=true;$("lowList").hidden=false;$("stList").hidden=true;$("outl").hidden=true;$("ownBody").hidden=true;$("ownLock").hidden=false;render()};

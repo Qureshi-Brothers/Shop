@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Workshop Bill: core (login, bill screen, tabs, print, awaaz, offline) ===== */
-const VER=24;
+const VER=25;
 const SUPA="https://nkfxdznmzsrsircqutda.supabase.co";
 const ANON="sb_publishable_IpyjtvFcq_gEgw4w5TBhyg_i4uOpJ6O";
 const M_TR="gpt-4o-transcribe",M_CH="gpt-4o-mini";
@@ -112,7 +112,39 @@ $("npGo").onclick=async()=>{
 };
 $("logout").onclick=logout;$("logout2").onclick=logout;
 $("pwEye").onclick=()=>{const i=$("pw"),on=i.type==="password";i.type=on?"text":"password";$("pwEye").textContent=on?"🙈":"👁️"};
-{const b=$("logoutTop");let t=0;b.onclick=()=>{if(b.dataset.s){clearTimeout(t);b.dataset.s="";b.textContent="Logout";b.style.background="#57534e";logout();return}b.dataset.s=1;b.textContent="Dobara dabayein";b.style.background="#b91c1c";t=setTimeout(()=>{b.dataset.s="";b.textContent="Logout";b.style.background="#57534e"},3000)}}
+/* ---------- ☰ menu ---------- */
+let afterUnlock=null;
+const drw=$("drawer"),drBg=$("drawerBg");
+function menuOpen(){
+  const n=(ME&&ME.name)||"";$("drShop").textContent=n;
+  document.querySelectorAll(".drAdm").forEach(e=>e.hidden=!(ME&&ME.is_admin));
+  drBg.hidden=false;drw.classList.add("open");drw.setAttribute("aria-hidden","false");
+}
+function menuClose(){drw.classList.remove("open");drw.setAttribute("aria-hidden","true");drBg.hidden=true;outReset()}
+$("menuBtn").onclick=menuOpen;drBg.onclick=menuClose;
+const goTo=el=>{if(el)setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),60)};
+function needPin(fn){
+  if(unlocked){fn();return}
+  afterUnlock=fn;goTo($("own"));setTimeout(()=>{try{$("pin").focus()}catch(e){}},400);say("Pehle PIN likh kar Kholein dabayein");
+}
+const NAV={
+  home:()=>window.scrollTo({top:0,behavior:"smooth"}),
+  today:()=>goTo($("todayCard")),
+  bills:()=>goTo($("billsCard")),
+  own:()=>needPin(()=>goTo($("own"))),
+  inv:()=>needPin(()=>{$("invBox").hidden=false;goTo($("invBtn"))}),
+  low:()=>needPin(()=>{$("lowList").hidden=false;goTo($("lowH"))}),
+  udh:()=>needPin(()=>goTo($("udhH"))),
+  out:()=>needPin(()=>{$("outl").hidden=false;try{outTogText()}catch(e){}goTo($("outH"))}),
+  admin:()=>goTo($("adminCard"))
+};
+document.querySelectorAll(".drItem[data-go]").forEach(b=>b.onclick=()=>{menuClose();(NAV[b.dataset.go]||(()=>{}))()});
+let outT=0;const drOut=$("drLogout");
+function outReset(){clearTimeout(outT);drOut.classList.remove("sure");drOut.innerHTML="<i>🚪</i>Logout"}
+drOut.onclick=()=>{
+  if(drOut.classList.contains("sure")){outReset();menuClose();logout();return}
+  drOut.classList.add("sure");drOut.innerHTML="<i>🚪</i>Pakka? Dobara dabayein";outT=setTimeout(outReset,3000);
+};
 
 /* ---------- chal rahi bikes (tabs) ---------- */
 const newJob=()=>({bike:"",work:[],parts:[],name:"",phone:"",paid:"",nextS:"",disc:"",takePrev:true,saved:false,editId:null,prevKeep:0});
@@ -155,7 +187,7 @@ async function start(){
   if(!ME){$("app").hidden=true;$("noshop").hidden=false;return}
   $("noshop").hidden=true;$("app").hidden=false;
   SHOP=String(ME.name||"").toUpperCase();OAI=ME.openai_key||"";pinHash=ME.pin||"";
-  $("shopName").textContent=ME.name;$("adminCard").hidden=!ME.is_admin;
+  $("shopName").textContent=ME.name;$("tbName").textContent=ME.name;$("adminCard").hidden=!ME.is_admin;
   document.title=ME.name;
   const sv=ls.get("jobs_"+ME.shop_id,null);
   if(sv&&sv.list&&sv.list.length){jobs=sv.list.map(j=>({...newJob(),...j}));ji=Math.min(sv.ji||0,jobs.length-1)}

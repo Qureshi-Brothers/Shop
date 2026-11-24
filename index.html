@@ -53,6 +53,25 @@ details{margin-top:8px}summary{font-size:19px}
 .kv{display:flex;justify-content:space-between;font-size:19px;padding:3px 0;border-bottom:1px dotted #d8d3c6}
 .fold{font-size:16px;color:#57534e}
 .sm{font-size:15px;color:#57534e}
+
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;background:#fff;margin:-12px -14px 12px;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.hamb{flex:none;width:48px;height:48px;border:0;border-radius:12px;background:#1c1b19;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:0;cursor:pointer}
+.hamb span{display:block;width:24px;height:3px;border-radius:2px;background:#fff}
+.tbName{font-size:20px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drawerBg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:330px;background:#fff;z-index:61;display:flex;flex-direction:column;transform:translateX(-105%);transition:transform .22s ease;box-shadow:4px 0 18px rgba(0,0,0,.25)}
+.drawer.open{transform:none}
+.drHead{background:#1c1b19;color:#fff;padding:22px 18px 16px}
+.drShop{font-size:21px;font-weight:700}
+.drSub{font-size:14px;opacity:.7;margin-top:2px}
+.drList{flex:1;overflow:auto;padding:6px 0}
+.drItem{display:flex;align-items:center;gap:14px;width:100%;border:0;background:none;text-align:left;font-size:19px;padding:14px 18px;color:#1c1b19;cursor:pointer}
+.drItem:active{background:#f1efe9}
+.drItem i{font-style:normal;width:28px;text-align:center;font-size:22px}
+.drSep{font-size:13px;font-weight:700;color:#8a857c;text-transform:uppercase;letter-spacing:.06em;padding:14px 18px 4px;border-top:1px solid #eee;margin-top:6px}
+.drOut{border-top:1px solid #eee;color:#b91c1c;font-weight:700;padding:18px}
+.drOut.sure{background:#b91c1c;color:#fff}
+.drawer [hidden]{display:none!important}
 </style></head><body>
 
 <div id="upd" class="upd" hidden>🔄 Naya version aa gaya. <button id="updGo">Abhi lagayein</button></div>
@@ -81,7 +100,25 @@ details{margin-top:8px}summary{font-size:19px}
 </div>
 
 <div id="app" hidden>
-  <div style="text-align:right"><button id="logoutTop" style="border:0;border-radius:10px;background:#57534e;color:#fff;font-size:16px;padding:8px 14px;margin-bottom:6px">Logout</button></div>
+  <div class="topbar"><button class="hamb" id="menuBtn" aria-label="Menu"><span></span><span></span><span></span></button><div class="tbName" id="tbName"></div></div>
+  <div class="drawerBg" id="drawerBg" hidden></div>
+  <nav class="drawer" id="drawer" aria-hidden="true">
+    <div class="drHead"><div class="drShop" id="drShop"></div><div class="drSub">Workshop Bill</div></div>
+    <div class="drList">
+      <button class="drItem" data-go="home"><i>🏠</i>Home (naya bill)</button>
+      <button class="drItem" data-go="today"><i>📊</i>Aaj Ka Hisaab</button>
+      <button class="drItem" data-go="bills"><i>📖</i>Purane Bills</button>
+      <div class="drSep">Maalik (PIN)</div>
+      <button class="drItem" data-go="own"><i>🔒</i>Maalik ka hissa</button>
+      <button class="drItem" data-go="inv"><i>📦</i>Inventory</button>
+      <button class="drItem" data-go="low"><i>🛒</i>Khareedna hai</button>
+      <button class="drItem" data-go="udh"><i>💳</i>Udhaar</button>
+      <button class="drItem" data-go="out"><i>🌐</i>Bahar se liya hua</button>
+      <div class="drSep drAdm">Admin</div>
+      <button class="drItem drAdm" data-go="admin"><i>🛠️</i>Admin: Clients</button>
+    </div>
+    <button class="drItem drOut" id="drLogout"><i>🚪</i>Logout</button>
+  </nav>
   <div class="pend" id="pendBar" hidden></div>
 
   <div class="card">
@@ -137,13 +174,13 @@ details{margin-top:8px}summary{font-size:19px}
     <button class="big k" id="clear">🆕 Nayi Bike</button>
   </div>
 
-  <div class="card">
+  <div class="card" id="todayCard">
     <h2><span class="cal"><b id="calM"></b><i id="calD"></i></span>Aaj Ka Hisaab</h2>
     <div id="today" style="font-size:22px"></div>
     <div id="todayList"></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="billsCard">
     <h2>📖 Purane Bills</h2>
     <div class="hint" id="allHint"></div>
     <div id="all"></div>
@@ -179,7 +216,7 @@ details{margin-top:8px}summary{font-size:19px}
       <h2>📈 Aaj ka live hisaab</h2>
       <div id="live"></div>
 
-      <h2>💳 Udhaar</h2>
+      <h2 id="udhH">💳 Udhaar</h2>
       <div class="hint" id="udhToday"></div>
       <div id="udh"></div>
 
@@ -192,9 +229,9 @@ details{margin-top:8px}summary{font-size:19px}
       <button class="big g" id="xlGo">Excel banayein</button>
 
       <h2>🔔 Service ki yaad</h2><div id="svc"></div>
-      <h2>🌐 Bahar se liya hua</h2><button class="big k" id="outTog">▼ List dikhayein</button><div id="outl" hidden></div>
+      <h2 id="outH">🌐 Bahar se liya hua</h2><button class="big k" id="outTog">▼ List dikhayein</button><div id="outl" hidden></div>
 
-      <h2>🛒 Khareedna hai</h2>
+      <h2 id="lowH">🛒 Khareedna hai</h2>
       <div class="hint" id="lowHint"></div>
       <button class="big k" id="lowTog" hidden>List dikhayein</button>
       <div id="lowList"></div>
@@ -226,7 +263,7 @@ details{margin-top:8px}summary{font-size:19px}
 </div>
 
 <div class="bar" id="bar">Tayyar</div>
-<script src="app.js?v=24"></script>
-<script src="owner.js?v=24"></script>
-<script src="admin.js?v=24"></script>
+<script src="app.js?v=25"></script>
+<script src="owner.js?v=25"></script>
+<script src="admin.js?v=25"></script>
 </body></html>
